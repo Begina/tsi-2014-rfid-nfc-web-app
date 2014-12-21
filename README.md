@@ -40,10 +40,10 @@ Koristiti sljedeće komande za pokretanje:
     cd tsi-nfc-webapp
     npm install
     node server/Server.js --dbhost <databaseb-host>
-    --dbname <database-port>
-    --dbuser <database-user>
-    --dbpassword <datababse password>
-    --dbname <database-name>
+                          --dbport <database-port>
+                          --dbuser <database-user>
+                          --dbpassword <datababse password>
+                          --dbname <database-name>
 
 Podaci korišteni kao parametri za servis su podaci o prethodno instaliranoj
 bazi.

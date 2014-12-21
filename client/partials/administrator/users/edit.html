@@ -2,48 +2,48 @@
 
 <legend>Edit user</legend>
 
-<div class="new-user row">
+<div class="row">
     <div class="col-lg-2"></div>
     <div class="col-lg-8">
         <div class="new-user-form">
-            <div class="form-group"
-                 data-ng-class="{true: '', false: 'has-error'}[user.isUsernameValid()]">
+            <div class="form-group">
                 <label for="user-username">Username</label>
                 <input id="user-username"
-                       type="text" class="form-control" placeholder="Username"
+                       type="text" 
+                       class="form-control"
+                       placeholder="Username"
                        data-ng-model="user.username">
             </div>
 
-            <div class="form-group"
-                 data-ng-class="{true: '', false: 'has-error'}[user.isPasswordValid()]">
+            <div class="form-group">
                 <label for="user-password">Password</label>
                 <input id="user-password"
-                       type="password" class="form-control"
-                       placeholder="Password" data-ng-model="user.password">
+                       type="password"
+                       class="form-control"
+                       placeholder="Password"
+                       data-ng-model="user.password">
             </div>
 
-            <label for="user-tag">NFC tag</label>
-            <select id="user-tag" class="form-control"
-                    data-ng-model="user.tag">
-                <option data-ng-repeat="nfc in nfcs"
-                        value="{{nfc.id}}"
-                        data-ng-selected="nfc_id === user.nfc_id">
-                    {{nfc.tag}}
-                </option>
+            <label for="user-tag">Tag</label>
+            <select id="user-tag"
+                    class="form-control"
+                    ng-model="user.tag"
+                    ng-options="tag.id as tag.uid for tag in tags">
+                <option value=""></option>
             </select>
 
             <label for="user-role">Role</label>
-            <select id="user-role" class="form-control"
-                    data-ng-model="user.role">
-                <option data-ng-repeat="role in roles"
-                        value="{{role.id}}">
-                    {{role.description}}
-                </option>
+            <select id="user-role" 
+                    class="form-control"
+                    ng-model="user.role"
+                    ng-options="role.id as role.description for role in roles">
             </select>
             <br>
 
-            <div class="alert alert-danger" role="alert"
-                 data-ng-class="{true:'', false:'hidden'}[notification.hasOccurred()]">
+            <div class="alert alert-danger"
+                 role="alert"
+                 data-ng-class="{true:'', false:'hidden'}[notification
+                 .hasOccurred()]">
                 <span class="glyphicon glyphicon-exclamation-sign"
                       aria-hidden="true"></span>
                 <span class="sr-only">Error:</span>

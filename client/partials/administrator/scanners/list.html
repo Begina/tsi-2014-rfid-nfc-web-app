@@ -1,6 +1,6 @@
 <div data-ng-include="'partials/administrator/header.html'"></div>
 
-<legend>RFID readers</legend>
+<legend>Scanners</legend>
 
 <table class="table table-striped">
     <thead>
@@ -16,16 +16,17 @@
     </tr>
     </thead>
     <tbody>
-    <tr data-ng-repeat="rfid in rfids | filter:search_keyword">
-        <td>{{ rfid.uid }}</td>
-        <td>{{ rfid.description }}</td>
+    <tr data-ng-repeat="scanner in scanners | filter:search_keyword">
+        <td>{{ scanner.uid }}</td>
+        <td>{{ scanner.description }}</td>
         <td>
             <a class="btn"
-               data-ng-href="#/administrator/rfids/edit/{{rfid.id}}">
-                <span class="glyphicon glyphicon-pencil"></span>&nbsp;&nbsp;Edit
+               href="#/administrator/scanners/edit/{{scanner.id}}">
+                <span class="glyphicon glyphicon-pencil"></span>
+                &nbsp;&nbsp;Edit
             </a>
             <a class="btn"
-               data-ng-href="#/administrator/rfids/remove/{{rfid.id}}">
+               href="#/administrator/scanners/remove/{{scanner.id}}">
                 <span class="glyphicon glyphicon-pencil"></span>
                 &nbsp;&nbsp;Delete
             </a>

@@ -80,7 +80,7 @@ var Credentials = function () {
     this.password = '';
 };
 
-var Rfid = function () {
+var Scanner = function () {
     this.id = 0;
     this.uid = '';
     this.description = '';
@@ -96,7 +96,7 @@ var Notification = function () {
     }
 };
 
-// TODO: Find a way to parametrize.
+// TODO: Parametrize.
 var serverUrl = 'http://localhost:3000';
 
 var ROLE = {
@@ -165,18 +165,18 @@ var SecurityService = function (onNotLoggedIn) {
     };
 };
 
-var RfidsService = function (securityService) {
-    this.add = function (rfid) {
-        return securityService.request(serverUrl + '/rfids/create', {
+var ScannersService = function (securityService) {
+    this.add = function (scanner) {
+        return securityService.request(serverUrl + '/scanners/create', {
             type: 'POST',
-            data: rfid,
+            data: scanner,
             dataType: 'JSON',
             crossDomain: true
         });
     };
 
     this.getAll = function () {
-        return securityService.request(serverUrl + '/rfids', {
+        return securityService.request(serverUrl + '/scanners', {
             type: 'GET',
             dataType: 'JSON',
             cache: false,
@@ -185,24 +185,24 @@ var RfidsService = function (securityService) {
     };
 
     this.getById = function (id) {
-        return securityService.request(serverUrl + '/rfids/' + id, {
+        return securityService.request(serverUrl + '/scanners/' + id, {
             type: 'GET',
             dataType: 'JSON',
             crossDomain: true
         });
     };
 
-    this.update = function (rfid) {
-        return securityService.request(serverUrl + '/rfids/update', {
+    this.update = function (scanner) {
+        return securityService.request(serverUrl + '/scanners/update', {
             type: 'POST',
-            data: rfid,
+            data: scanner,
             dataType: 'JSON',
             crossDomain: true
         });
     };
 
     this.remove = function (id) {
-        return securityService.request(serverUrl + '/rfids/remove/' + id, {
+        return securityService.request(serverUrl + '/scanners/remove/' + id, {
             type: 'POST',
             dataType: 'JSON',
             crossDomain: true
@@ -237,6 +237,7 @@ var UsersService = function (securityService) {
     };
 
     this.update = function (user) {
+        console.log(JSON.stringify(user));
         return securityService.request(serverUrl + '/users/update', {
             type: 'POST',
             data: user,
@@ -312,3 +313,69 @@ var CrudService = function (securityService, urls) {
     };
 };
 
+/**
+ *
+ * @param securityService
+ * @param urls - {
+ *                create: String,
+ *                getAll: String,
+ *                getAllUnassigned: String
+ *                getById: String, Must be http://bla.com/bla/.../:id
+ *                update: String,
+ *                remove: String Must be http://bla.com/bla/.../:id
+ *               }
+ * @constructor
+ */
+var TagsService = function (securityService, urls) {
+    this.add = function (model) {
+        return securityService.request(urls.create, {
+            type: 'POST',
+            data: model,
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+
+    this.getAll = function () {
+        return securityService.request(urls.getAll, {
+            type: 'GET',
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+
+    this.getAllUnassigned = function () {
+        return securityService.request(urls.getAllUnassigned, {
+            type: 'GET',
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+
+    this.getById = function (id) {
+        var requestUrl = urls.getById.replace(':id', id);
+        return securityService.request(requestUrl, {
+            type: 'GET',
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+
+    this.update = function (model) {
+        return securityService.request(urls.update, {
+            type: 'POST',
+            data: model,
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+
+    this.remove = function (id) {
+        var requestUrl = urls.remove.replace(':id', id);
+        return securityService.request(requestUrl, {
+            type: 'POST',
+            dataType: 'JSON',
+            crossDomain: true
+        });
+    };
+};

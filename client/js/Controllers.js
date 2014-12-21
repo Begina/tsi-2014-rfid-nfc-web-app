@@ -2,7 +2,7 @@
  * Authentication controllers
  ******************************************************************************/
 
-nfcApp.controller('LoginController', ['$scope', 'SecurityService',
+nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
     '$location', function ($scope, securityService, $location) {
         $scope.credentials = {
             username: '',
@@ -35,12 +35,13 @@ nfcApp.controller('LoginController', ['$scope', 'SecurityService',
 ]);
 
 /*******************************************************************************
- * Administrator RFIDs controllers
+ * Administrator scanners controllers
  ******************************************************************************/
 
-nfcApp.controller('AdministratorRfidsAddController', ['$scope', 'RfidsService',
-    function ($scope, rfidsService) {
-        $scope.user = {
+nfcRfidApp.controller('AdministratorScannersAddController', ['$scope', 
+    'ScannersService',
+    function ($scope, scannersService) {
+        $scope.scanner = {
             id: 0,
             uid: '',
             description: ''
@@ -49,10 +50,10 @@ nfcApp.controller('AdministratorRfidsAddController', ['$scope', 'RfidsService',
         $scope.notification = new Notification();
 
         $scope.add = function () {
-            rfidsService.add($scope.user)
+            scannersService.add($scope.scanner)
                 .done(function (response) {
                     $scope.notification.message = response.message;
-                    $scope.user = {
+                    $scope.scanner = {
                         id: 0,
                         uid: '',
                         description: ''
@@ -68,35 +69,36 @@ nfcApp.controller('AdministratorRfidsAddController', ['$scope', 'RfidsService',
     }
 ]);
 
-nfcApp.controller('AdministratorRfidsController', ['$scope', 'RfidsService',
-    function ($scope, rfidsService) {
-        $scope.rfids = [];
+nfcRfidApp.controller('AdministratorScannersController', ['$scope', 
+    'ScannersService',
+    function ($scope, scannersService) {
+        $scope.scanners = [];
 
-        var getAllRfidsPromise = rfidsService.getAll();
-        if (getAllRfidsPromise) {
-            getAllRfidsPromise
-                .done(function (rfids) {
-                    $scope.rfids = rfids;
+        var getAllScannersPromise = scannersService.getAll();
+        if (getAllScannersPromise) {
+            getAllScannersPromise
+                .done(function (scanners) {
+                    $scope.scanners = scanners;
                     $scope.$apply();
                 })
                 .fail(function (response) {
-                    console.log('Failed to load RFIDs.');
+                    console.log('Failed to load scanners.');
                 });
         }
     }
 ]);
 
-nfcApp.controller('AdministratorRfidsEditController', ['$scope', 'RfidsService',
-    '$routeParams', '$location', function ($scope, rfidsService, $routeParams,
-                                           $location) {
-        $scope.rfid = {};
+nfcRfidApp.controller('AdministratorScannersEditController', ['$scope', 
+    'ScannersService', '$routeParams', '$location', 
+    function ($scope, scannersService, $routeParams, $location) {
+        $scope.scanner = {};
 
         $scope.notification = new Notification();
 
         $scope.update = function () {
-            rfidsService.update($scope.rfid)
+            scannersService.update($scope.scanner)
                 .done(function (message) {
-                    $location.path('/administrator/rfids');
+                    $location.path('/administrator/scanners');
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -106,12 +108,12 @@ nfcApp.controller('AdministratorRfidsEditController', ['$scope', 'RfidsService',
                 });
         };
 
-        var rfidId = $routeParams.id;
-        var getRfidsByIdPromise = rfidsService.getById(rfidId);
-        if (getRfidsByIdPromise) {
-            getRfidsByIdPromise
-                .done(function (rfid) {
-                    $scope.rfid = rfid;
+        var scannerId = $routeParams.id;
+        var getScannersByIdPromise = scannersService.getById(scannerId);
+        if (getScannersByIdPromise) {
+            getScannersByIdPromise
+                .done(function (scanner) {
+                    $scope.scanner = scanner;
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -123,20 +125,21 @@ nfcApp.controller('AdministratorRfidsEditController', ['$scope', 'RfidsService',
     }
 ]);
 
-nfcApp.controller('AdministratorRfidsRemoveController', ['$scope',
-    'RfidsService', '$routeParams', '$location', function ($scope, rfidsService,
-                                                           $routeParams,
-                                                           $location) {
+nfcRfidApp.controller('AdministratorScannersRemoveController', ['$scope',
+    'ScannersService', '$routeParams', '$location', 
+    function ($scope, scannersService, $routeParams, $location) {
+        console.log('Controller active.');
+
         var id = 0;
 
-        $scope.rfid = {};
+        $scope.scanner = {};
 
         $scope.notification = new Notification();
 
         $scope.remove = function () {
-            rfidsService.remove(id)
+            scannersService.remove(id)
                 .done(function (response) {
-                    $location.path('/administrator/rfids');
+                    $location.path('/administrator/scanners');
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -147,15 +150,15 @@ nfcApp.controller('AdministratorRfidsRemoveController', ['$scope',
         };
 
         id = $routeParams.id;
-        var getRfidsByIdPromise = rfidsService.getById(id);
-        if (getRfidsByIdPromise) {
-            getRfidsByIdPromise
-                .done(function (rfid) {
-                    $scope.rfid = rfid;
+        var getScannersByIdPromise = scannersService.getById(id);
+        if (getScannersByIdPromise) {
+            getScannersByIdPromise
+                .done(function (scanner) {
+                    $scope.scanner = scanner;
                     $scope.$apply();
                 })
                 .fail(function () {
-                    $location.$apply('/administrator/rfids');
+                    $location.$apply('/administrator/scanners');
                     $scope.$apply();
                 });
         }
@@ -166,18 +169,13 @@ nfcApp.controller('AdministratorRfidsRemoveController', ['$scope',
  * Administrator users controllers
  ******************************************************************************/
 
-nfcApp.controller('AdministratorUsersAddController', ['$scope', 'UsersService',
-    'NfcsService', 'RolesService', function ($scope, usersService, nfcsService,
-                                             rolesService) {
-        $scope.user = {
-            id: 0,
-            username: '',
-            password: '',
-            role: 0
-        };
+nfcRfidApp.controller('AdministratorUsersAddController', ['$scope', 
+    'UsersService', 'TagsService', 'RolesService', 
+    function ($scope, usersService, tagsService, rolesService) {
+        $scope.user = {};
 
         $scope.roles = [];
-        $scope.nfcs = [];
+        $scope.tags = [];
 
         $scope.notification = new Notification();
 
@@ -185,12 +183,7 @@ nfcApp.controller('AdministratorUsersAddController', ['$scope', 'UsersService',
             usersService.add($scope.user)
                 .done(function (response) {
                     $scope.notification.message = response.message;
-                    $scope.user = {
-                        id: 0,
-                        username: '',
-                        password: '',
-                        role: 0
-                    };
+                    $scope.user = {};
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -209,6 +202,7 @@ nfcApp.controller('AdministratorUsersAddController', ['$scope', 'UsersService',
             getAllRolesPromise
                 .done(function (roles) {
                     $scope.roles = roles;
+                    $scope.user.role = $scope.roles[0].id;
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -216,12 +210,12 @@ nfcApp.controller('AdministratorUsersAddController', ['$scope', 'UsersService',
                 });
         }
 
-        var getAllNfcsPromise = nfcsService.getAll();
+        var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
 
-        if (getAllNfcsPromise) {
-            getAllNfcsPromise
-                .done(function (nfcs) {
-                    $scope.nfcs = nfcs;
+        if (getAllUnassignedTagsPromise) {
+            getAllUnassignedTagsPromise
+                .done(function (tags) {
+                    $scope.tags = tags;
                     $scope.$apply();
                 })
                 .fail(function (response) {
@@ -231,7 +225,7 @@ nfcApp.controller('AdministratorUsersAddController', ['$scope', 'UsersService',
     }
 ]);
 
-nfcApp.controller('AdministratorUsersController', ['$scope', 'UsersService',
+nfcRfidApp.controller('AdministratorUsersController', ['$scope', 'UsersService',
     function ($scope, usersService) {
         $scope.users = [];
 
@@ -249,61 +243,90 @@ nfcApp.controller('AdministratorUsersController', ['$scope', 'UsersService',
     }
 ]);
 
-
-nfcApp.controller('AdministratorUsersEditController', ['$scope', 'UsersService',
-    'RolesService', 'NfcsService', '$routeParams', '$location',
-    function ($scope, usersService, rolesService, nfcsService, $routeParams,
+nfcRfidApp.controller('AdministratorUsersEditController', ['$scope', 
+    'UsersService', 'RolesService', 'TagsService', '$routeParams', '$location',
+    function ($scope, usersService, rolesService, tagsService, $routeParams,
               $location) {
+        $scope.user_all = {};
+
         $scope.user = {};
 
         $scope.roles = [];
-        $scope.nfcs = [];
+        $scope.tags = [];
 
         $scope.notification = new Notification();
 
-        // The getAllRolesPromise and getAllNfcPromise  is null when parsed for
+        // The getAllRolesPromise and getAllNfcPromise is null when parsed for
         // the first time.
+
+        // null - no active tag.
+        var getUnassignedTags = function (activeTag) {
+            var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
+
+            if (getAllUnassignedTagsPromise) {
+                getAllUnassignedTagsPromise
+                    .done(function (tags) {
+                        $scope.tags = tags;
+                        if (activeTag && activeTag.id) {
+                            $scope.tags.push(activeTag);
+                            $scope.user.tag = activeTag.id;
+                        }
+
+                        $scope.$apply();
+                    })
+                    .fail(function (response) {
+                        console.log('Failed to load tags.');
+                    });
+            }
+        };
+
+        var getRoles = function (activeRoleId, callback) {
+            var getAllRolesPromise = rolesService.getAll();
+
+            if (getAllRolesPromise) {
+                getAllRolesPromise
+                    .done(function (roles) {
+                        $scope.roles = roles;
+                        for (var i=0; i<$scope.roles.length; i++) {
+                            if ($scope.roles[i].id === activeRoleId) {
+                                $scope.user.role = $scope.roles[i].id;
+                                break;
+                            }
+                        }
+
+                        callback();
+                    })
+                    .fail(function (response) {
+                        console.log('Failed to load roles.');
+                    });
+            }
+        };
 
         var userId = $routeParams.id;
         var getUserByIdPromise = usersService.getById(userId);
         if (getUserByIdPromise) {
             getUserByIdPromise
-                .done(function (user) {
-                    $scope.user = user;
-                    $scope.user.username = user.user_username;
-                    $scope.user.password = user.user_password;
-                    $scope.$apply();
+                .done(function (user_all) {
+                    $scope.user_all = user_all;
+                    
+                    $scope.user = {
+                        id: user_all.user_id,
+                        username: user_all.user_username,
+                        password: user_all.user_password,
+                        role: user_all.role_id
+                    };
+                    
+                    getRoles(user_all.role_id, function () {
+                        getUnassignedTags({
+                            id: user_all.tag_id,
+                            uid: user_all.tag_uid
+                        });
+                    });
                 })
                 .fail(function (response) {
                     var error = response.responseJSON;
                     $scope.notification.message = error.message;
                     $scope.$apply();
-                });
-        }
-
-        var getAllRolesPromise = rolesService.getAll();
-
-        if (getAllRolesPromise) {
-            getAllRolesPromise
-                .done(function (roles) {
-                    $scope.roles = roles;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load roles.');
-                });
-        }
-
-        var getAllNfcsPromise = nfcsService.getAll();
-
-        if (getAllNfcsPromise) {
-            getAllNfcsPromise
-                .done(function (nfcs) {
-                    $scope.nfcs = nfcs;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load tags.');
                 });
         }
 
@@ -322,10 +345,9 @@ nfcApp.controller('AdministratorUsersEditController', ['$scope', 'UsersService',
     }
 ]);
 
-nfcApp.controller('AdministratorUsersRemoveController', ['$scope',
-    'UsersService', '$routeParams', '$location', function ($scope, usersService,
-                                                           $routeParams,
-                                                           $location) {
+nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
+    'UsersService', '$routeParams', '$location', 
+    function ($scope, usersService, $routeParams, $location) {
         var id = 0;
 
         $scope.notification = new Notification();
@@ -355,4 +377,3 @@ nfcApp.controller('AdministratorUsersRemoveController', ['$scope',
             });
     }
 ]);
-

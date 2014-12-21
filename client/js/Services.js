@@ -1,5 +1,5 @@
 var securityService = new SecurityService();
-nfcApp.factory('SecurityService', ['$location', function ($location) {
+nfcRfidApp.factory('SecurityService', ['$location', function ($location) {
     var onNotLoggedIn = function () {
         $location.path('/login');
     };
@@ -7,18 +7,18 @@ nfcApp.factory('SecurityService', ['$location', function ($location) {
     return securityService;
 }]);
 
-nfcApp.factory('RfidsService', ['SecurityService', function (securityService) {
-    //return new RfidsService(securityService);
-    return new CrudService(securityService, {
-        create: serverUrl + '/rfids/create',
-        getAll: serverUrl + '/rfids',
-        getById: serverUrl + '/rfids/:id',
-        update: serverUrl + '/rfids/update',
-        remove: serverUrl + '/rfids/remove/:id'
-    });
+nfcRfidApp.factory('ScannersService', ['SecurityService', 
+    function (securityService) {
+        return new CrudService(securityService, {
+            create: serverUrl + '/scanners/create',
+            getAll: serverUrl + '/scanners',
+            getById: serverUrl + '/scanners/:id',
+            update: serverUrl + '/scanners/update',
+            remove: serverUrl + '/scanners/remove/:id'
+        });
 }]);
 
-nfcApp.factory('UsersService', ['SecurityService', function (securityService) {
+nfcRfidApp.factory('UsersService', ['SecurityService', function (securityService) {
     return new CrudService(securityService, {
         create: serverUrl + '/users/create',
         getAll: serverUrl + '/users',
@@ -28,7 +28,7 @@ nfcApp.factory('UsersService', ['SecurityService', function (securityService) {
     });
 }]);
 
-nfcApp.factory('RolesService', ['SecurityService', function (securityService) {
+nfcRfidApp.factory('RolesService', ['SecurityService', function (securityService) {
     return new CrudService(securityService, {
         create: '',
         getAll: serverUrl + '/roles',
@@ -38,12 +38,14 @@ nfcApp.factory('RolesService', ['SecurityService', function (securityService) {
     });
 }]);
 
-nfcApp.factory('NfcsService', ['SecurityService', function (securityService) {
-    return new CrudService(securityService, {
-        create: serverUrl + '/nfcs/create',
-        getAll: serverUrl + '/nfcs',
-        getById: serverUrl + '/nfcs/:id',
-        update: serverUrl + '/nfcs/update',
-        remove: serverUrl + '/nfcs/remove/:id'
-    });
+nfcRfidApp.factory('TagsService', ['SecurityService', 
+    function (securityService) {
+        return new TagsService(securityService, {
+            create: serverUrl + '/tags/create',
+            getAll: serverUrl + '/tags',
+            getAllUnassigned: serverUrl + '/tags/unassigned',
+            getById: serverUrl + '/tags/:id',
+            update: serverUrl + '/tags/update',
+            remove: serverUrl + '/tags/remove/:id'
+        });
 }]);

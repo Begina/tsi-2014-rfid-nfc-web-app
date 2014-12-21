@@ -42,11 +42,11 @@ if (!argv.dbhost
  * Imports
  ******************************************************************************/
 var ROLE = require('./lib/Role.js');
-var SecurityService = require('./lib/SecurityService.js');
-var RfidsService = require('./lib/RfidsService.js');
 var UsersService = require('./lib/UsersService.js');
 var RolesService = require('./lib/RolesService.js');
-var NfcsService = require('./lib/NfcsService.js');
+var SecurityService = require('./lib/SecurityService.js');
+var TagsService = require('./lib/TagsService.js');
+var ScannersService = require('./lib/ScannersService.js');
 
 /*******************************************************************************
  * Application
@@ -63,10 +63,10 @@ var dbConnectionPool = mysql.createPool({
 });
 
 var securityService = new SecurityService(dbConnectionPool);
-var rfidsService = new RfidsService(dbConnectionPool);
+var scannersService = new ScannersService(dbConnectionPool);
 var usersService = new UsersService(dbConnectionPool);
 var rolesService = new RolesService(dbConnectionPool);
-var nfcsService = new NfcsService(dbConnectionPool);
+var tagsService = new TagsService(dbConnectionPool);
 
 var express = require('express');
 var app = express();
@@ -74,22 +74,23 @@ var app = express();
 var ROUTE = {
     login: '/login',
     logout: '/logout',
-    rfidsCreate: '/rfids/create',
-    rfids: '/rfids',
-    rfidsId: '/rfids/:id',
-    rfidsUpdate: '/rfids/update',
-    rfidsRemoveId: '/rfids/remove/:id',
+    scannersCreate: '/scanners/create',
+    scanners: '/scanners',
+    scannersId: '/scanners/:id',
+    scannersUpdate: '/scanners/update',
+    scannersRemoveId: '/scanners/remove/:id',
     usersCreate: '/users/create',
     users: '/users',
     usersId: '/users/:id',
     usersUpdate: '/users/update',
     usersRemoveId: '/users/remove/:id',
     roles:'/roles',
-    nfcsCreate: '/nfcs/create',
-    nfcs: '/nfcs',
-    nfcsId: '/nfcs/:id',
-    nfcsUpdate: '/nfcs/update',
-    nfcsRemoveId: '/nfcs/remove/:id'
+    tagsCreate: '/tags/create',
+    tags: '/tags',
+    tagsUnassigned: '/tags/unassigned',
+    tagsId: '/tags/:id',
+    tagsUpdate: '/tags/update',
+    tagsRemoveId: '/tags/remove/:id'
 };
 
 /********************
@@ -111,7 +112,7 @@ app.use(function (req, res, next) {
 });
 
 // Administrator required resources.
-app.use([ROUTE.rfidsCreate, ROUTE.rfidsUpdate,
+app.use([ROUTE.scannersCreate, ROUTE.scannersUpdate,
         ROUTE.usersCreate, ROUTE.usersUpdate],
     function (req, res, next) {
         var errorMessage = '';
@@ -119,7 +120,7 @@ app.use([ROUTE.rfidsCreate, ROUTE.rfidsUpdate,
         var token = req.query.token;
         if (!securityService.isRole(token, ROLE.administrator)) {
             res.status(401);
-            errorMessage = 'Only administrators can add new RFIDs.';
+            errorMessage = 'Only administrators can add do this action.';
             res.json({message: errorMessage});
             res.send();
         } else {
@@ -128,7 +129,7 @@ app.use([ROUTE.rfidsCreate, ROUTE.rfidsUpdate,
     });
 
 // Login required resources.
-app.use([ROUTE.rfids], function (req, res, next) {
+app.use([ROUTE.scanners], function (req, res, next) {
     var errorMessage = '';
 
     var token = req.query.token;
@@ -183,68 +184,68 @@ app.post(ROUTE.logout, function (req, res) {
 });
 
 /********************
- * RFID readers
+ * Scanners
  ********************/
 
 /**
  * Request object: {uid:String, description:String}
  */
-app.post(ROUTE.rfidsCreate, function (req, res) {
-    var rfid = req.body;
+app.post(ROUTE.scannersCreate, function (req, res) {
+    var scanner = req.body;
 
     var onCreated = function () {
-        var message = 'Successfully added: ' + rfid.uid;
+        var message = 'Successfully added: ' + scanner.uid;
         res.json({message: message});
     };
 
-    rfidsService.create(rfid, onCreated);
+    scannersService.create(scanner, onCreated);
 });
 
 /**
  * Request object: none
  */
-app.get(ROUTE.rfids, function (req, res) {
-    var onRfids = function (rfids) {
-        res.json(rfids);
+app.get(ROUTE.scanners, function (req, res) {
+    var onScanners = function (scanners) {
+        res.json(scanners);
     };
 
-    rfidsService.getAll(onRfids);
+    scannersService.getAll(onScanners);
 });
 
 /**
  * Request object: {id:Number}
  */
-app.get(ROUTE.rfidsId, function (req, res) {
-    var rfidId = req.params.id;
+app.get(ROUTE.scannersId, function (req, res) {
+    var scannerId = req.params.id;
 
-    var onRfid = function (rfid) {
-        res.json(rfid);
+    var onScanner = function (scanner) {
+        res.json(scanner);
     };
 
-    rfidsService.getById(rfidId, onRfid);
+    scannersService.getById(scannerId, onScanner);
 });
 
 /**
  * Request object {id:Number, uid:String, description:String}
  */
-app.post(ROUTE.rfidsUpdate, function (req, res) {
-    var rfid = req.body;
+app.post(ROUTE.scannersUpdate, function (req, res) {
+    var scanner = req.body;
 
-    var onRfidUpdated = function () {
-        res.json({message: 'RFID updated successfully.'});
+    var onScannerUpdated = function () {
+        res.json({message: 'Scanner updated successfully.'});
     };
 
-    rfidsService.update(rfid, onRfidUpdated);
+    scannersService.update(scanner, onScannerUpdated);
 });
 
-app.post(ROUTE.rfidsRemoveId, function (req, res) {
+app.post(ROUTE.scannersRemoveId, function (req, res) {
     var id = req.params.id;
 
-    var onRfidRemoved = function () {
-        res.json({message: 'RFID removed successfully.'});
+    var onScannerRemoved = function () {
+        res.json({message: 'Scanner removed successfully.'});
     };
 
-    rfidsService.remove(id, onRfidRemoved);
+    scannersService.remove(id, onScannerRemoved);
 });
 
 /********************
@@ -290,11 +291,11 @@ app.get(ROUTE.usersId, function (req, res) {
 });
 
 /**
- * Request object {id:Number,
- *                 username:String,
- *                 password:String,
- *                 role:Number,
- *                 nfc:Number}
+ * Request object {id: Number,
+ *                 username: String,
+ *                 password: String,
+ *                 role: Number,
+ *                 tag: Number}
  */
 app.post(ROUTE.usersUpdate, function (req, res) {
     var user = req.body;
@@ -328,69 +329,80 @@ app.get(ROUTE.roles, function (req, res) {
 });
 
 /********************
- * NFCs
+ * tags
  ********************/
 
 /**
  * Request object: {tag:String, description:String}
  */
-app.post(ROUTE.nfcsCreate, function (req, res) {
-    var nfc = req.body;
+app.post(ROUTE.tagsCreate, function (req, res) {
+    var tag = req.body;
 
     var onCreated = function () {
-        var message = 'Successfully added: ' + nfc.uid;
+        var message = 'Successfully added: ' + tag.uid;
         res.json({message: message});
     };
 
-    nfcsService.create(nfc, onCreated);
+    tagsService.create(tag, onCreated);
 });
 
 /**
  * Request object: none
  */
-app.get(ROUTE.nfcs, function (req, res) {
-    var onNfcs = function (nfcs) {
-        res.json(nfcs);
+app.get(ROUTE.tags, function (req, res) {
+    var onTags = function (tags) {
+        res.json(tags);
     };
 
-    nfcsService.getAll(onNfcs);
+    tagsService.getAll(onTags);
+});
+
+/**
+ * Request object: none
+ */
+app.get(ROUTE.tagsUnassigned, function (req, res) {
+    var onTags = function (tags) {
+        res.json(tags);
+    };
+
+    tagsService.getAllUnassigned(onTags);
 });
 
 /**
  * Request object: {id:Number}
  */
-app.get(ROUTE.nfcsId, function (req, res) {
-    var nfcId = req.params.id;
+app.get(ROUTE.tagsId, function (req, res) {
+    var tagId = req.params.id;
 
-    var onNfc = function (nfc) {
-        res.json(nfc);
+    var onTag = function (tag) {
+        res.json(tag);
     };
 
-    nfcsService.getById(nfcId, onNfc);
+    tagsService.getById(tagId, onTag);
 });
 
 /**
  * Request object {tag:String,
  *                 description:String}
  */
-app.post(ROUTE.nfcsUpdate, function (req, res) {
-    var nfc = req.body;
+// app.post(ROUTE.tagsUpdate, function (req, res) {
+//     var nfc = req.body;
 
-    var onNfcUpdated = function () {
-        res.json({message: 'NFC updated successfully.'});
-    };
+//     var onTagUpdated = function () {
+//         res.json({message: 'NFC updated successfully.'});
+//     };
 
-    nfcsService.update(nfc, onNfcUpdated);
-});
+//     tagsService.update(nfc, onTagUpdated);
+// });
 
-app.post(ROUTE.nfcsRemoveId, function (req, res) {
+app.post(ROUTE.tagsRemoveId, function (req, res) {
     var id = req.params.id;
 
-    var onNfcRemoved = function () {
-        res.json({message: 'NFC removed successfully.'});
+    var onTagRemoved = function () {
+        res.json({message: 'Tag removed successfully.'});
     };
 
-    nfcsService.remove(id, onNfcRemoved);
+    tagsService.remove(id, onTagRemoved);
 });
 
 app.listen(3000);

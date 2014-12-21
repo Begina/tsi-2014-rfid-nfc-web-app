@@ -1,6 +1,6 @@
-var nfcApp = angular.module('nfcApp', ['ngRoute']);
+var nfcRfidApp = angular.module('nfcRfidApp', ['ngRoute']);
 
-nfcApp.config(function ($routeProvider) {
+nfcRfidApp.config(function ($routeProvider) {
     $routeProvider
         .when('/login', {
             templateUrl: 'partials/login.html',
@@ -9,21 +9,21 @@ nfcApp.config(function ($routeProvider) {
         .when('/administrator/dashboard', {
             templateUrl: 'partials/administrator/dashboard.html'
         })
-        .when('/administrator/rfids/add', {
-            templateUrl: 'partials/administrator/rfids/add.html',
-            controller: 'AdministratorRfidsAddController'
+        .when('/administrator/scanners/add', {
+            templateUrl: 'partials/administrator/scanners/add.html',
+            controller: 'AdministratorScannersAddController'
         })
-        .when('/administrator/rfids', {
-            templateUrl: 'partials/administrator/rfids/list.html',
-            controller: 'AdministratorRfidsController'
+        .when('/administrator/scanners', {
+            templateUrl: 'partials/administrator/scanners/list.html',
+            controller: 'AdministratorScannersController'
         })
-        .when('/administrator/rfids/edit/:id', {
-            templateUrl: 'partials/administrator/rfids/edit.html',
-            controller: 'AdministratorRfidsEditController'
+        .when('/administrator/scanners/edit/:id', {
+            templateUrl: 'partials/administrator/scanners/edit.html',
+            controller: 'AdministratorScannersEditController'
         })
-        .when('/administrator/rfids/remove/:id', {
-            templateUrl: 'partials/administrator/rfids/remove.html',
-            controller: 'AdministratorRfidsRemoveController'
+        .when('/administrator/scanners/remove/:id', {
+            templateUrl: 'partials/administrator/scanners/remove.html',
+            controller: 'AdministratorScannersRemoveController'
         })
         .when('/administrator/users/add', {
             templateUrl: 'partials/administrator/users/add.html',

@@ -1,0 +1,40 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<legend>New scanner</legend>
+
+<div class="row">
+    <div class="col-lg-2"></div>
+    <div class="col-lg-8">
+        <div class="form">
+            <div class="form-group">
+                <label for="scanner-uid">Unique ID</label>
+                <input id="scanner-uid" type="text" class="form-control"
+                       placeholder="Unique ID"
+                       data-ng-model="scanner.uid">
+            </div>
+
+            <div class="form-group">
+                <label for="scanner-description">Description</label>
+                <textarea id="scanner-description"
+                          class="form-control"
+                          placeholder="Scanner description..."
+                          data-ng-model="scanner.description">
+                </textarea>
+            </div>
+
+            <div class="alert alert-danger" 
+                 role="alert"
+                 data-ng-class="{true:'', false:'hidden'}[notification
+                 .hasOccurred()]">
+                <span class="glyphicon glyphicon-exclamation-sign"
+                      aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                {{notification.message}}
+            </div>
+
+            <button class="btn btn-default" data-ng-click="add()">
+                <i class="glyphicon glyphicon-plus"></i> Add
+            </button>
+        </div>
+    </div>
+</div>

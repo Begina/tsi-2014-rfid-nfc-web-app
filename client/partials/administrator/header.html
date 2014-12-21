@@ -1,4 +1,5 @@
-<nav class="navbar navbar-default" role="navigation">
+<nav class="navbar navbar-default" 
+     role="navigation">
     <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
@@ -10,7 +11,9 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#/administrator/dashboard">NFC App</a>
+            <a class="navbar-brand" href="#/administrator/dashboard">
+                NFC-RFID App
+            </a>
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
@@ -19,31 +22,45 @@
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle"
                        data-toggle="dropdown"
-                       role="button" aria-expanded="false">
+                       role="button" 
+                       aria-expanded="false">
                         Users
-                        <span class="caret"></span></a>
+                        <span class="caret"></span>
+                    </a>
                     <ul class="dropdown-menu" role="menu">
                         <li><a href="#/administrator/users">Users</a></li>
                         <li><a href="#/administrator/users/add">Add</a></li>
                     </ul>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle"
+                    <a href="#" 
+                       class="dropdown-toggle"
                        data-toggle="dropdown"
-                       role="button" aria-expanded="false">
-                        RFID readers
-                        <span class="caret"></span></a>
+                       role="button" 
+                       aria-expanded="false">
+                        Scanners
+                        <span class="caret"></span>
+                    </a>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="#/administrator/rfids">RFID readers
-                        </a>
+                        <li>
+                            <a href="#/administrator/scanners">
+                                Scanners
+                            </a>
                         </li>
-                        <li><a href="#/administrator/rfids/add">Add</a></li>
+                        <li>
+                            <a href="#/administrator/scanners/add">
+                                Add
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="#">Lougout</a></li>
+                <li>
+                    <a href="#">Lougout</a>
+                </li>
+                <!-- TODO: What is it for? -->
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown"
                        role="button" aria-expanded="false">Dropdown <span

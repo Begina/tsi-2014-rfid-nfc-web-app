@@ -38,7 +38,7 @@ var UsersService = function (dbConnectionPool) {
 
     this.update = function (user, onUserUpdated) {
         dbConnectionPool.query('CALL updateUser(?, ?, ?, ?, ?)',
-            [user.user_id, user.username, user.password, user.role, user.tag],
+            [user.id, user.username, user.password, user.role, user.tag],
             function (err, result) {
                 if (onUserUpdated) onUserUpdated();
             }

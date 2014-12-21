@@ -7,13 +7,13 @@ VALUES ('administrator', 'password', 1),
 
 $$
 
-INSERT INTO rfids(uid, description)
+INSERT INTO scanners(uid, description)
 VALUES ('RFIDEntranceDoor', 'RFID for the entrance door.'),
   ('RFIDTeachersFloor', 'RFID for the teacher\'s floor.')
 
 $$
 
-INSERT INTO nfcs(tag, description)
+INSERT INTO tags(uid, description)
 VALUES ('test', 'Test tag 1.'),
   ('test-02', 'Test tag 2.')
 

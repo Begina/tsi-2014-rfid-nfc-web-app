@@ -5,19 +5,28 @@
 <table class="table table-striped">
     <thead>
     <tr>
-        <th><input type="text" data-ng-model="search_keyword.user_username">
+        <th>
+            <input type="text" 
+                   data-ng-model="search_keyword.user_username">
         </th>
-        <th><input type="text" data-ng-model="search_keyword.user_password">
+        <th>
+            <input type="text" 
+                   data-ng-model="search_keyword.user_password">
         </th>
-        <th><input type="text" data-ng-model="search_keyword.nfc_tag"></th>
-        <th><input type="text"
-                   data-ng-model="search_keyword.role_description"></th>
+        <th>
+            <input type="text" 
+                   data-ng-model="search_keyword.tag_uid">
+        </th>
+        <th>
+            <input type="text"
+                   data-ng-model="search_keyword.role_description">
+        </th>
         <th></th>
     </tr>
     <tr>
         <th>Username</th>
         <th>Password</th>
-        <th>NFC tag</th>
+        <th>Tag</th>
         <th>Role</th>
         <th>Actions</th>
     </tr>
@@ -26,7 +35,7 @@
     <tr data-ng-repeat="user in users | filter:search_keyword">
         <td>{{ user.user_username }}</td>
         <td>{{ user.user_password }}</td>
-        <td>{{ user.nfc_tag }}</td>
+        <td>{{ user.tag_uid }}</td>
         <td>{{ user.role_description }}</td>
         <td>
             <a class="btn"

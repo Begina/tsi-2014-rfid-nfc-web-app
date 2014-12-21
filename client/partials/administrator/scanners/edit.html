@@ -1,32 +1,30 @@
 <div data-ng-include="'partials/administrator/header.html'"></div>
 
-<legend>Edit RFID reader</legend>
+<legend>Edit scanner</legend>
 
 <div class="row">
     <div class="col-lg-2"></div>
     <div class="col-lg-8">
         <div class="form">
-            <label for="rfid-uid">Unique ID</label>
-
-            <div id="rfid-uid"
-                 class="form-group"
-                 data-ng-class="{true: '', false: 'has-error'}[rfid.isUidValid()]">
+            <label for="scanner-uid">Unique ID</label>
+            <div id="scanner-uid"
+                 class="form-group">
                 <input type="text" class="form-control" placeholder="Unique ID"
-                       data-ng-model="rfid.uid">
+                       data-ng-model="scanner.uid">
             </div>
 
-            <div class="form-group"
-                 data-ng-class="{true: '', false: 'has-error'}[rfid.isDescriptionValid()]">
-                <label for="rfid-description">Description</label>
-                <textarea id="rfid-description"
+            <div class="form-group">
+                <label for="scanner-description">Description</label>
+                <textarea id="scanner-description"
                           class="form-control"
-                          placeholder="RFID description (location, type, ...)"
-                          data-ng-model="rfid.description">
+                          placeholder="Scanner description..."
+                          data-ng-model="scanner.description">
                 </textarea>
             </div>
 
             <div class="alert alert-danger" role="alert"
-                 data-ng-class="{true:'', false:'hidden'}[notification.hasOccurred()]">
+                 data-ng-class="{true:'', false:'hidden'}[notification
+                 .hasOccurred()]">
                 <span class="glyphicon glyphicon-exclamation-sign"
                       aria-hidden="true"></span>
                 <span class="sr-only">Error:</span>
