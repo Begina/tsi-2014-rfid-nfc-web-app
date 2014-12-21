@@ -1,0 +1,162 @@
+.side-menu-nav {
+    font-family: verdana;
+    font-size: 12px;
+    font-weight: 200;
+    background-color: #364252;
+    position: fixed;
+    width: 200px;
+    height: 100%;
+    color: #ffffff;
+}
+
+.side-menu-nav .side-menu-brand {
+    background-color: #2c3643;
+    line-height: 40px;
+    display: block;
+    text-align: center;
+}
+
+.side-menu-nav .side-menu-toggle-btn {
+    display: none;
+}
+
+.side-menu-nav ul,
+.side-menu-nav li {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    line-height: 35px;
+    cursor: pointer;
+}
+
+.side-menu-nav ul .side-menu-collapsed .side-menu-arrow:before,
+.side-menu-nav li .side-menu-collapsed .side-menu-arrow:before {
+    font-family: FontAwesome;
+    content: "\f053";
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 10px;
+    vertical-align: middle;
+    float: right;
+}
+
+.side-menu-nav ul :not(side-menu-collapsed) .side-menu-arrow:before,
+.side-menu-nav li :not(side-menu-collapsed) .side-menu-arrow:before {
+    font-family: FontAwesome;
+    content: "\f078";
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 10px;
+    vertical-align: middle;
+    float: right;
+}
+
+.side-menu-nav ul .active,
+.side-menu-nav li .active {
+    border-left: 3px solid #44b6ae;
+    background-color: #5e7390;
+}
+
+.side-menu-nav ul .side-menu-sub-menu li.active,
+.side-menu-nav li .side-menu-sub-menu li.active {
+    color: #1AAE98;
+}
+
+.side-menu-nav ul .side-menu-sub-menu li,
+.side-menu-nav li .side-menu-sub-menu li {
+    background-color: #222933;
+    border: none;
+    line-height: 28px;
+    border-bottom: 1px solid #2c3643;
+    margin-left: 0;
+}
+
+.side-menu-nav ul .side-menu-sub-menu li:hover,
+.side-menu-nav li .side-menu-sub-menu li:hover {
+    background-color: #364252;
+}
+
+.side-menu-nav ul .side-menu-sub-menu li:before,
+.side-menu-nav li .side-menu-sub-menu li:before {
+    font-family: FontAwesome;
+    content: "\f105";
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 10px;
+    vertical-align: middle;
+}
+
+.side-menu-nav li {
+    padding-left: 0;
+    border-left: 3px solid #364252;
+    border-bottom: 1px solid #2c3643;
+}
+
+.side-menu-nav li a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.side-menu-nav li a i {
+    padding-left: 10px;
+    width: 20px;
+    padding-right: 20px;
+}
+
+.side-menu-nav li:hover {
+    border-left: 3px solid #FFF;
+    background-color: #5e7390;
+    -webkit-transition: all 1s ease;
+    -moz-transition: all 1s ease;
+    -o-transition: all 1s ease;
+    -ms-transition: all 1s ease;
+    transition: all 1s ease;
+}
+
+@media (max-width: 767px) {
+    .side-menu-nav {
+        position: relative;
+        width: 100%;
+    }
+
+    .side-menu-nav .side-menu-toggle-btn {
+        display: block;
+        cursor: pointer;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        z-index: 10 !important;
+    }
+
+    .side-menu-brand {
+        text-align: left !important;
+        font-size: 20px;
+        padding-left: 10px;
+        line-height: 50px !important;
+    }
+}
+
+@media (min-width: 767px) {
+    .side-menu-nav .side-menu-menu-list .side-menu-menu-content {
+        display: block;
+    }
+
+    .side-menu-container {
+        width: 1130px;
+        margin-left: 200px;
+        max-height: 100%;
+    }
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.side-menu-collapse {
+    visibility: visible;
+}
+
+.side-menu-container {
+    text-align: justify;
+}

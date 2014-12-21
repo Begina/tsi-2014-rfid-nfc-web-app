@@ -1,0 +1,28 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<h2>Are you sure you want to delete user:</h2>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Username</th>
+        <th>Password</th>
+        <th>NFC tag</th>
+        <th>Role</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>{{ user.user_username }}</td>
+        <td>{{ user.user_password }}</td>
+        <td>{{ user.nfc_tag }}</td>
+        <td>{{ user.role_description }}</td>
+    </tr>
+    </tbody>
+</table>
+
+<button class="btn btn-default" data-ng-click="remove()">
+    <i class="glyphicon glyphicon-ok"></i> Remove
+</button>
+<a href="#/administrator/users" class="btn btn-default">
+    <i class="glyphicon glyphicon-remove"></i> Cancel
+</a>

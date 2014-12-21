@@ -1,0 +1,35 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<legend>RFID readers</legend>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th><input type="text" data-ng-model="search_keyword.uid"></th>
+        <th><input type="text" data-ng-model="search_keyword.description"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <th>UID</th>
+        <th>Description</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr data-ng-repeat="rfid in rfids | filter:search_keyword">
+        <td>{{ rfid.uid }}</td>
+        <td>{{ rfid.description }}</td>
+        <td>
+            <a class="btn"
+               data-ng-href="#/administrator/rfids/edit/{{rfid.id}}">
+                <span class="glyphicon glyphicon-pencil"></span>&nbsp;&nbsp;Edit
+            </a>
+            <a class="btn"
+               data-ng-href="#/administrator/rfids/remove/{{rfid.id}}">
+                <span class="glyphicon glyphicon-pencil"></span>
+                &nbsp;&nbsp;Delete
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>

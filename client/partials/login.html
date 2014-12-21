@@ -1,0 +1,27 @@
+<div class="login-form-fullscreen_bg"></div>
+
+<div class="login-form-container">
+    <div class="container">
+        <div class="login-form">
+            <h1 class="login-form-heading text-muted">Sign In</h1>
+            <input type="text" class="login-form-control form-control"
+                   placeholder="Username" required="" autofocus=""
+                   data-ng-model="credentials.username">
+            <input type="password" class="login-form-control form-control"
+                   placeholder="Password" required=""
+                   data-ng-model="credentials.password">
+
+            <div class="alert alert-danger" role="alert"
+                 data-ng-class="{true:'', false:'hidden'}[notification.hasOccurred()]">
+                <span class="glyphicon glyphicon-exclamation-sign"
+                      aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                {{notification.message}}
+            </div>
+
+            <button class="btn btn-lg btn-primary btn-block"
+                    data-ng-click="login()">Sign In
+            </button>
+        </div>
+    </div>
+</div>

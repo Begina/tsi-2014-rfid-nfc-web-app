@@ -1,0 +1,23 @@
+<legend>Remove RFID reader</legend>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>UID</th>
+        <th>Description</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>{{ rfid.uid }}</td>
+        <td>{{ rfid.description }}</td>
+    </tr>
+    </tbody>
+</table>
+
+<button class="btn btn-default" data-ng-click="remove()">
+    <i class="glyphicon glyphicon-ok"></i> Remove
+</button>
+<a href="#/administrator/rfids" class="btn btn-default">
+    <i class="glyphicon glyphicon-remove"></i> Cancel
+</a>

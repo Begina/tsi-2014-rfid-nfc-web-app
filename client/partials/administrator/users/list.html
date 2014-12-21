@@ -1,0 +1,44 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<legend>Users</legend>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th><input type="text" data-ng-model="search_keyword.user_username">
+        </th>
+        <th><input type="text" data-ng-model="search_keyword.user_password">
+        </th>
+        <th><input type="text" data-ng-model="search_keyword.nfc_tag"></th>
+        <th><input type="text"
+                   data-ng-model="search_keyword.role_description"></th>
+        <th></th>
+    </tr>
+    <tr>
+        <th>Username</th>
+        <th>Password</th>
+        <th>NFC tag</th>
+        <th>Role</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr data-ng-repeat="user in users | filter:search_keyword">
+        <td>{{ user.user_username }}</td>
+        <td>{{ user.user_password }}</td>
+        <td>{{ user.nfc_tag }}</td>
+        <td>{{ user.role_description }}</td>
+        <td>
+            <a class="btn"
+               href="#/administrator/users/edit/{{user.user_id}}">
+                <span class="glyphicon glyphicon-pencil"></span>
+                &nbsp;&nbsp;Edit
+            </a>
+            <a class="btn" href="#/administrator/users/remove/{{user.user_id}}">
+                <span class="glyphicon glyphicon-pencil"></span>
+                &nbsp;&nbsp;Delete
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>
