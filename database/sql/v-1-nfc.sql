@@ -171,6 +171,7 @@ CREATE TABLE IF NOT EXISTS scanners (
   id          INT         NOT NULL AUTO_INCREMENT,
   uid         VARCHAR(30) NOT NULL,
   description VARCHAR(300),
+  commands    VARCHAR(1000) NOT NULL,
   PRIMARY KEY pk_scanners(id),
   UNIQUE uq_scanners_uid(uid)
 );
@@ -178,12 +179,88 @@ CREATE TABLE IF NOT EXISTS scanners (
 $$
 
 CREATE TABLE IF NOT EXISTS scanner_commands (
-  id          INT NOT NULL AUTO_INCREMENT,
-  command     INT NOT NULL,
-  description VARCHAR(50),
+  id      INT NOT NULL AUTO_INCREMENT,
+  command VARCHAR(50),
+  scanner INT NOT NULL,
   PRIMARY KEY pk_scanner_commands(id),
-  UNIQUE uq_scanner_commands(command)
+  FOREIGN KEY fk_scanner_commands_scanners(scanner) REFERENCES scanners(id)
 );
+
+$$
+
+# Commands is a comma separated list.
+# Must end with a comma.
+CREATE PROCEDURE createScanner(
+  uid         VARCHAR(30),
+  description VARCHAR(300),
+  commands    VARCHAR(1000)
+)
+  BEGIN
+    DECLARE scanner_id INT DEFAULT NULL;
+    DECLARE i INT DEFAULT 1;
+    DECLARE last_occurrence INT DEFAULT 1;
+
+    INSERT INTO scanners(uid, description, commands)
+    VALUES (uid, description, SUBSTRING(commands, 1, CHAR_LENGTH(commands)-1));
+
+    SELECT LAST_INSERT_ID()
+    INTO scanner_id;
+
+    indefinite_loop: WHILE i > 0 DO
+      SELECT LOCATE(',', commands, i+1)
+      INTO i;
+
+      IF i=0 THEN
+        LEAVE indefinite_loop;
+      END IF;
+
+      # 'PERMIT,DENY,'
+      INSERT INTO scanner_commands(command, scanner)
+      VALUES (SUBSTRING(commands, last_occurrence, i-last_occurrence), 
+              scanner_id);
+
+      SELECT i+1
+      INTO last_occurrence;
+    END WHILE indefinite_loop;
+  END
+
+$$
+
+CREATE PROCEDURE updateScanner(
+  scanner_id  INT,
+  uid         VARCHAR(30),
+  description VARCHAR(300),
+  commands    VARCHAR(1000)
+)
+  BEGIN
+    DECLARE i INT DEFAULT 1;
+    DECLARE last_occurrence INT DEFAULT 1;
+
+    UPDATE scanners 
+    SET scanners.uid = uid, 
+        scanners.description = description,
+        scanners.commands = SUBSTRING(commands, 1, CHAR_LENGTH(commands)-1)
+    WHERE scanners.id = scanner_id;
+
+    DELETE FROM scanner_commands
+    WHERE scanner_commands.scanner = scanner_id;
+
+    indefinite_loop: WHILE i > 0 DO
+      SELECT LOCATE(',', commands, i+1)
+      INTO i;
+
+      IF i=0 THEN
+        LEAVE indefinite_loop;
+      END IF;
+
+      INSERT INTO scanner_commands(command, scanner)
+      VALUES (SUBSTRING(commands, last_occurrence, i-last_occurrence), 
+              scanner_id);
+
+      SELECT i+1
+      INTO last_occurrence;
+    END WHILE indefinite_loop;
+  END
 
 $$
 
@@ -299,7 +376,6 @@ AS
     scanners.description             AS scanner_description,
     scanner_commands.id              AS scanner_command_id,
     scanner_commands.command         AS scanner_command,
-    scanner_commands.description     AS scanner_command_description,
     user_scanner_rules.id            AS user_scanner_rule_id,
     user_scanner_rules.week_day      AS user_scanner_rule_week_day,
     user_scanner_rules.time_start    AS user_scanner_rule_time_start,

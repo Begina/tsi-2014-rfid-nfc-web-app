@@ -1,7 +1,17 @@
 var ScannersService = function (dbConnectionPool) {
+    var buildScannerCommandsField = function (scanner) {
+        var commands = '';
+        scanner.commands.forEach(function (command) {
+            commands += command + ',';
+        });
+
+        return commands;
+    };
+
     this.create = function (scanner, onCreated) {
-        dbConnectionPool.query('INSERT INTO scanners(uid, description) ' +
-            'VALUES (?,?)', [scanner.uid, scanner.description],
+        var commands = buildScannerCommandsField(scanner);
+        dbConnectionPool.query('CALL createScanner(?, ?, ?) ', 
+            [scanner.uid, scanner.description, commands],
             function (err, result) {
                 if (onCreated) onCreated();
             }
@@ -37,8 +47,9 @@ var ScannersService = function (dbConnectionPool) {
     };
 
     this.update = function (scanner, onScannerUpdated) {
-        dbConnectionPool.query('UPDATE scanners SET ? WHERE id=?',
-            [{uid: scanner.uid, description: scanner.description}, scanner.id],
+        var commands = buildScannerCommandsField(scanner);
+        dbConnectionPool.query('CALL updateScanner(?, ?, ?, ?)',
+            [scanner.id, scanner.uid, scanner.description, commands],
             function (err, result) {
                 if (onScannerUpdated) onScannerUpdated();
             }

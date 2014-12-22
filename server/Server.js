@@ -47,6 +47,7 @@ var RolesService = require('./lib/RolesService.js');
 var SecurityService = require('./lib/SecurityService.js');
 var TagsService = require('./lib/TagsService.js');
 var ScannersService = require('./lib/ScannersService.js');
+var ScannerCommandsService = require('./lib/ScannerCommandsService.js');
 var UserScanRulesService = require('./lib/UserScanRulesService.js');
 
 /*******************************************************************************
@@ -65,6 +66,7 @@ var dbConnectionPool = mysql.createPool({
 
 var securityService = new SecurityService(dbConnectionPool);
 var scannersService = new ScannersService(dbConnectionPool);
+var scannerCommandsService = new ScannerCommandsService(dbConnectionPool);
 var usersService = new UsersService(dbConnectionPool);
 var rolesService = new RolesService(dbConnectionPool);
 var tagsService = new TagsService(dbConnectionPool);
@@ -93,7 +95,8 @@ var ROUTE = {
     tagsId: '/tags/:id',
     tagsUpdate: '/tags/update',
     tagsRemoveId: '/tags/remove/:id',
-    userScanRulesCreate: '/userScanRules/create'
+    userScanRulesCreate: '/userScanRules/create',
+    scannerCommands: '/scannerCommands/:id'
 };
 
 /********************
@@ -249,6 +252,19 @@ app.post(ROUTE.scannersRemoveId, function (req, res) {
     };
 
     scannersService.remove(id, onScannerRemoved);
+});
+
+/********************
+ * Scanner commands
+ ********************/
+app.get(ROUTE.scannerCommands, function (req, res) {
+    var scannerId = req.params.id;
+
+    var onScannerCommands = function (commands) {
+        res.json(commands);
+    };
+
+    scannerCommandsService.getById(scannerId, onScannerCommands);
 });
 
 /********************
@@ -409,7 +425,7 @@ app.post(ROUTE.tagsRemoveId, function (req, res) {
 });
 
 /********************
- * tags
+ * User scan rules
  ********************/
 
 app.post(ROUTE.userScanRulesCreate, function (req, res) {

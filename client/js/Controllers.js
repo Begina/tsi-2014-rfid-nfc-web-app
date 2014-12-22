@@ -89,8 +89,9 @@ nfcRfidApp.controller('AdministratorScannersController', ['$scope',
 ]);
 
 nfcRfidApp.controller('AdministratorScannersEditController', ['$scope', 
-    'ScannersService', '$routeParams', '$location', 
-    function ($scope, scannersService, $routeParams, $location) {
+    'ScannersService', 'ScannerCommandsService', '$routeParams', '$location', 
+    function ($scope, scannersService, scannerCommandsService, $routeParams, 
+              $location) {
         $scope.scanner = {};
 
         $scope.notification = new Notification();
@@ -108,13 +109,34 @@ nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
                 });
         };
 
+        var getScannerCommands = function (scannerId) {
+            var getScannerCommandsPromise = 
+                scannerCommandsService.getById(scannerId);
+            if (getScannerCommandsPromise) {
+                getScannerCommandsPromise
+                    .done(function (commands) {
+                        var commandsOnly = [];
+                        for (var i=0; i<commands.length; i++) {
+                            commandsOnly.push(commands[i].command);
+                        }
+                        $scope.scanner.commands = commandsOnly;
+                        $scope.$apply();
+                    })
+                    .fail(function (response) {
+                        var error = response.responseJSON;
+                        $scope.notification.message = error.message;
+                        $scope.$apply();
+                    });
+            }    
+        };
+
         var scannerId = $routeParams.id;
         var getScannersByIdPromise = scannersService.getById(scannerId);
         if (getScannersByIdPromise) {
             getScannersByIdPromise
                 .done(function (scanner) {
                     $scope.scanner = scanner;
-                    $scope.$apply();
+                    getScannerCommands(scanner.id);
                 })
                 .fail(function (response) {
                     var error = response.responseJSON;

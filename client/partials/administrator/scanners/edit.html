@@ -22,6 +22,16 @@
                 </textarea>
             </div>
 
+            <div class="form-group">
+                <label for="scanner-commands">Commands (comma separated)</label>
+                <input id="scanner-commands"
+                       name="commands"
+                       class="form-control"
+                       placeholder="COMMAND1,COMMAND2,COMMAND3,..." 
+                       ng-model="scanner.commands" 
+                       ng-list>
+            </div>
+
             <div class="alert alert-danger" role="alert"
                  data-ng-class="{true:'', false:'hidden'}[notification
                  .hasOccurred()]">
