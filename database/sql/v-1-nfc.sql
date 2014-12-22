@@ -211,7 +211,6 @@ CREATE TABLE IF NOT EXISTS user_scanner_rules (
   scanner                  INT    NOT NULL,
   response_scanner_command INT    NOT NULL,
   week_day                 INT             DEFAULT NULL,
-  date                     DATE            DEFAULT NULL,
   time_start               TIME,
   time_end                 TIME,
   valid_from               DATE,
@@ -231,7 +230,7 @@ CREATE TABLE IF NOT EXISTS user_scanner_rules (
 
 $$
 
-CREATE PROCEDURE createUserWeekdayDayScanRule(
+CREATE PROCEDURE createUserDayOfWeekScanRule(
   user_id                     BIGINT,
   scanner_id                  INT,
   week_day                    INT,
@@ -268,14 +267,11 @@ CREATE PROCEDURE createUserDateScanRule(
   date                        DATE,
   time_start                  TIME,
   time_end                    TIME,
-  response_scanner_command_id INT,
-  valid_from                  DATE,
-  valid_to                    DATE
+  response_scanner_command_id INT
 )
   BEGIN
     INSERT INTO user_scanner_rules (user,
                                     scanner,
-                                    date,
                                     time_start,
                                     time_end,
                                     response_scanner_command,
@@ -283,12 +279,11 @@ CREATE PROCEDURE createUserDateScanRule(
                                     valid_to)
     VALUES (user_id,
             scanner_id,
-            date,
             time_start,
             time_end,
             response_scanner_command_id,
-            valid_from,
-            valid_to);
+            date,
+            date);
   END
 
 $$
@@ -307,9 +302,10 @@ AS
     scanner_commands.description     AS scanner_command_description,
     user_scanner_rules.id            AS user_scanner_rule_id,
     user_scanner_rules.week_day      AS user_scanner_rule_week_day,
-    user_scanner_rules.date          AS user_scanner_rule_date,
     user_scanner_rules.time_start    AS user_scanner_rule_time_start,
-    user_scanner_rules.time_end      AS user_scanner_rule_time_end
+    user_scanner_rules.time_end      AS user_scanner_rule_time_end,
+    user_scanner_rules.valid_from    AS user_scanner_rules_valid_from,
+    user_scanner_rules.valid_to      AS user_scanner_rules_valid_to
   FROM users
     JOIN user_scanner_rules
       ON user_scanner_rules.user = users.id

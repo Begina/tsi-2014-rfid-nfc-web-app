@@ -47,6 +47,7 @@ var RolesService = require('./lib/RolesService.js');
 var SecurityService = require('./lib/SecurityService.js');
 var TagsService = require('./lib/TagsService.js');
 var ScannersService = require('./lib/ScannersService.js');
+var UserScanRulesService = require('./lib/UserScanRulesService.js');
 
 /*******************************************************************************
  * Application
@@ -67,6 +68,7 @@ var scannersService = new ScannersService(dbConnectionPool);
 var usersService = new UsersService(dbConnectionPool);
 var rolesService = new RolesService(dbConnectionPool);
 var tagsService = new TagsService(dbConnectionPool);
+var userScanRulesService = new UserScanRulesService(dbConnectionPool);
 
 var express = require('express');
 var app = express();
@@ -90,7 +92,8 @@ var ROUTE = {
     tagsUnassigned: '/tags/unassigned',
     tagsId: '/tags/:id',
     tagsUpdate: '/tags/update',
-    tagsRemoveId: '/tags/remove/:id'
+    tagsRemoveId: '/tags/remove/:id',
+    userScanRulesCreate: '/userScanRules/create'
 };
 
 /********************
@@ -403,6 +406,20 @@ app.post(ROUTE.tagsRemoveId, function (req, res) {
     };
 
     tagsService.remove(id, onTagRemoved);
+});
+
+/********************
+ * tags
+ ********************/
+
+app.post(ROUTE.userScanRulesCreate, function (req, res) {
+    var userScanRule = req.body;
+
+    var onUserScanRuleCreated = function () {
+        res.json({message: 'User scan rule successfully created.'});
+    };
+
+    userScanRulesService.create(userScanRule, onUserScanRuleCreated);
 });
 
 app.listen(3000);

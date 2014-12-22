@@ -49,3 +49,12 @@ nfcRfidApp.factory('TagsService', ['SecurityService',
             remove: serverUrl + '/tags/remove/:id'
         });
 }]);
+
+nfcRfidApp.factory('UserScanRulesService', ['SecurityService', 
+    function (securityService) {
+        return new CrudService(securityService, {
+            create: serverUrl + '/userScanRules/create',
+            getAll: serverUrl + '/userScanRules',
+            remove: serverUrl + '/userScanRules/remove/:id'
+        });
+}]);

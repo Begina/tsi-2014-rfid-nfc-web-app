@@ -31,14 +31,6 @@
                     ng-options="tag.id as tag.uid for tag in tags">
                 <option value=""></option>
             </select>
-            <!-- <select id="user-tag" 
-                    class="form-control"
-                    data-ng-model="user.tag">
-                <option data-ng-repeat="tag in tags"
-                        value="{{tag.id}}">
-                    {{tag.uid}}
-                </option>
-            </select> -->
 
             <label for="user-role">Role</label>
             <select id="user-role" 
@@ -46,14 +38,6 @@
                     ng-model="user.role"
                     ng-options="role.id as role.description for role in roles">
             </select>
-            <!-- <select id="user-role"
-                    class="form-control"
-                    data-ng-model="user.role">
-                <option data-ng-repeat="role in roles"
-                        value="{{role.id}}">
-                    {{role.description}}
-                </option>
-            </select> -->
             <br>
 
             <div class="btn btn-default" 

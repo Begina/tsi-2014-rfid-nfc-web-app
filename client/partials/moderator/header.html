@@ -1,4 +1,5 @@
-<nav class="navbar navbar-default" role="navigation">
+<nav class="navbar navbar-default" 
+     role="navigation">
     <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
@@ -10,7 +11,9 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#/moderator/dashboard">NFC App</a>
+            <a class="navbar-brand" href="#/administrator/dashboard">
+                NFC-RFID App
+            </a>
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
@@ -20,14 +23,20 @@
                     <a href="#" class="dropdown-toggle"
                        data-toggle="dropdown"
                        role="button" aria-expanded="false">
-                        Users
-                        <span class="caret"></span></a>
+                        User scan rules
+                        <span class="caret"></span>
+                    </a>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="#/moderator/users/permissions">User
-                            permissions</a>
+                        <li>
+                            <a href="#/moderator/userScanRules/add">
+                                Add user scan rule
+                            </a>
                         </li>
-                        <li><a href="#/moderator/users/requests">User
-                            requests</a></li>
+                        <li>
+                            <a href="#/moderator/users/requests">
+                                User requests
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li class="dropdown">

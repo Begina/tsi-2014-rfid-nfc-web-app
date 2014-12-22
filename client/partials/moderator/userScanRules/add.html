@@ -1,0 +1,44 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<legend>New user scan rule for <b>{{user_all.user_username}}</b></legend>
+
+<div class="row">
+    <div class="col-lg-2"></div>
+    <div class="col-lg-8">
+        <div class="new-user-form">
+            <label for="response-command">Response command</label>
+            <select id="response-command"
+                    class="form-control"
+                    ng-model="userScanRule.responseScannerCommandId"
+                    ng-options="scannerCommand.id as scannerCommand.command
+                                for scannerCommand in scannerCommands">
+                <option value=""></option>
+            </select>
+
+            <label for="user-role">Role</label>
+            <select id="user-role" class="form-control"
+                    data-ng-model="user.role">
+                <option data-ng-repeat="role in roles"
+                        value="{{role.id}}">
+                    {{role.description}}
+                </option>
+            </select>
+            <br>
+
+            <div class="alert alert-danger"
+                 role="alert"
+                 data-ng-class="{true:'', false:'hidden'}[notification
+                 .hasOccurred()]">
+                <span class="glyphicon glyphicon-exclamation-sign"
+                      aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                {{notification.message}}
+            </div>
+
+            <div class="btn btn-default" 
+                 data-ng-click="add()">
+                <i class="glyphicon glyphicon-plus"></i> Add
+            </div>
+        </div>
+    </div>
+</div>

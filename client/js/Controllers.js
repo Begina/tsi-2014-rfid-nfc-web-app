@@ -377,3 +377,63 @@ nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
             });
     }
 ]);
+
+/*******************************************************************************
+ * Moderator user scan rules controllers
+ ******************************************************************************/
+
+nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope', 
+    'UserScanRulesService', 'UsersService', 'ScannersService', '$routeParams', 
+    function ($scope, userScanRulesService, usersService, scannersService, 
+              $routeParams) {
+        $scope.userScanRule = {};
+
+        $scope.user_all = {};
+        $scope.scanners = [];
+
+        $scope.notification = new Notification();
+
+        $scope.add = function () {
+            userScanRulesService.add($scope.userScanRule)
+                .done(function (response) {
+                    $scope.notification.message = response.message;
+                    $scope.userScanRule = {};
+                    $scope.$apply();
+                })
+                .fail(function (response) {
+                    var error = response.responseJSON;
+                    $scope.notification.message = error.message;
+                    $scope.$apply();
+                });
+        };
+
+        var getAllScannersPromise = scannersService.getAll();
+
+        if (getAllScannersPromise) {
+            getAllScannersPromise
+                .done(function (scanners) {
+                    $scope.scanners = scanners;
+                    $scope.userScanRule.scannerId = $scope.scanners[0].id;
+                    $scope.userScanRule.responseScannerCommandId = 
+                        $scope.scanners[0].commands[0].id;
+                    $scope.$apply();
+                })
+                .fail(function (response) {
+                    console.log('Failed to load roles.');
+                });
+        }
+
+        var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
+
+        if (getAllUnassignedTagsPromise) {
+            getAllUnassignedTagsPromise
+                .done(function (tags) {
+                    $scope.tags = tags;
+                    $scope.$apply();
+                })
+                .fail(function (response) {
+                    console.log('Failed to load tags.');
+                });
+        }
+    }
+]);
