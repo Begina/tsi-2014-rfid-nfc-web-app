@@ -44,8 +44,9 @@ nfcRfidApp.config(function ($routeProvider) {
         .when('/moderator/dashboard', {
             templateUrl: 'partials/moderator/dashboard.html'
         })
-        .when('/moderator/userScanRules/add/:userId', {
-            templateUrl: 'partials/moderator/dashboard.html'
+        .when('/moderator/userScanRules/add', {
+            templateUrl: 'partials/moderator/userScanRules/add.html',
+            controller: 'UserScanRulesController'
         })
         .otherwise({
             redirectTo: '/login'

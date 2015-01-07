@@ -97,7 +97,7 @@ var Notification = function () {
 };
 
 // TODO: Parametrize.
-var serverUrl = 'http://localhost:3000';
+var serverUrl = '';
 
 var ROLE = {
     administrator: 1,

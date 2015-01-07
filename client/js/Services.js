@@ -21,7 +21,7 @@ nfcRfidApp.factory('ScannersService', ['SecurityService',
 nfcRfidApp.factory('ScannerCommandsService', ['SecurityService', 
     function (securityService) {
         return new CrudService(securityService, {
-            getById: serverUrl + '/scannerCommands/:id',
+            getById: serverUrl + '/scannerCommands/:id'
         });
 }]);
 

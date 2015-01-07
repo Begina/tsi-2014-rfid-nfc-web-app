@@ -16,11 +16,12 @@ var usage = 'Usage:\n' +
     process.argv[0] + ' ' + process.argv[1] + ' ' + '[options]\n' +
     '\n' +
     'Options:\n' +
-    '  --dbhost      <database_host>(*required)\n' +
-    '  --dbport      <database_port>(*required)\n' +
-    '  --dbuser      <database_user>(*required)\n' +
-    '  --dbpassword  <database_password>(*required)\n' +
-    '  --dbname      <database_name>(*required)\n' +
+    '  --dbhost         <database_host>(*required)\n' +
+    '  --dbport         <database_port>(*required)\n' +
+    '  --dbuser         <database_user>(*required)\n' +
+    '  --dbpassword     <database_password>(*required)\n' +
+    '  --dbname         <database_name>(*required)\n' +
+    '  --webServerPort  <web_server_port>(*required)\n' +
     '\n' +
     '  --help        To print this help\n';
 
@@ -33,7 +34,8 @@ if (!argv.dbhost
     || !argv.dbuser
     || !argv.dbpassword
     || !argv.dbname
-    || !argv.dbport) {
+    || !argv.dbport
+    || !argv.webServerPort) {
     console.log(usage);
     process.exit(1);
 }
@@ -438,4 +440,14 @@ app.post(ROUTE.userScanRulesCreate, function (req, res) {
     userScanRulesService.create(userScanRule, onUserScanRuleCreated);
 });
 
-app.listen(3000);
+/*******************************************************************************
+ * Serving static files
+ ******************************************************************************/
+
+app.use(express.static(__dirname + '/../client'));
+
+/*******************************************************************************
+ * Application start
+ ******************************************************************************/
+
+app.listen(argv.webServerPort);
