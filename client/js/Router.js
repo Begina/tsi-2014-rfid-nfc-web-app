@@ -1,4 +1,4 @@
-var nfcRfidApp = angular.module('nfcRfidApp', ['ngRoute']);
+var nfcRfidApp = angular.module('nfcRfidApp', ['ngRoute', 'ui.bootstrap']);
 
 nfcRfidApp.config(function ($routeProvider) {
     $routeProvider
@@ -46,7 +46,15 @@ nfcRfidApp.config(function ($routeProvider) {
         })
         .when('/moderator/userScanRules/add', {
             templateUrl: 'partials/moderator/userScanRules/add.html',
-            controller: 'UserScanRulesController'
+            controller: 'ModeratorUserScanRulesAddController'
+        })
+        .when('/moderator/userScanRules', {
+            templateUrl: 'partials/moderator/userScanRules/list.html',
+            controller: 'ModeratorUserScanRulesController'
+        })
+        .when('/moderator/userScanRules/remove/:id', {
+            templateUrl: 'partials/moderator/userScanRules/remove.html',
+            controller: 'ModeratorUserScanRulesRemoveController'
         })
         .otherwise({
             redirectTo: '/login'

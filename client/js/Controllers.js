@@ -38,7 +38,7 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
  * Administrator scanners controllers
  ******************************************************************************/
 
-nfcRfidApp.controller('AdministratorScannersAddController', ['$scope', 
+nfcRfidApp.controller('AdministratorScannersAddController', ['$scope',
     'ScannersService',
     function ($scope, scannersService) {
         $scope.scanner = {
@@ -69,7 +69,7 @@ nfcRfidApp.controller('AdministratorScannersAddController', ['$scope',
     }
 ]);
 
-nfcRfidApp.controller('AdministratorScannersController', ['$scope', 
+nfcRfidApp.controller('AdministratorScannersController', ['$scope',
     'ScannersService',
     function ($scope, scannersService) {
         $scope.scanners = [];
@@ -88,9 +88,9 @@ nfcRfidApp.controller('AdministratorScannersController', ['$scope',
     }
 ]);
 
-nfcRfidApp.controller('AdministratorScannersEditController', ['$scope', 
-    'ScannersService', 'ScannerCommandsService', '$routeParams', '$location', 
-    function ($scope, scannersService, scannerCommandsService, $routeParams, 
+nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
+    'ScannersService', 'ScannerCommandsService', '$routeParams', '$location',
+    function ($scope, scannersService, scannerCommandsService, $routeParams,
               $location) {
         $scope.scanner = {};
 
@@ -110,13 +110,13 @@ nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
         };
 
         var getScannerCommands = function (scannerId) {
-            var getScannerCommandsPromise = 
+            var getScannerCommandsPromise =
                 scannerCommandsService.getById(scannerId);
             if (getScannerCommandsPromise) {
                 getScannerCommandsPromise
                     .done(function (commands) {
                         var commandsOnly = [];
-                        for (var i=0; i<commands.length; i++) {
+                        for (var i = 0; i < commands.length; i++) {
                             commandsOnly.push(commands[i].command);
                         }
                         $scope.scanner.commands = commandsOnly;
@@ -127,7 +127,7 @@ nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
                         $scope.notification.message = error.message;
                         $scope.$apply();
                     });
-            }    
+            }
         };
 
         var scannerId = $routeParams.id;
@@ -148,7 +148,7 @@ nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
 ]);
 
 nfcRfidApp.controller('AdministratorScannersRemoveController', ['$scope',
-    'ScannersService', '$routeParams', '$location', 
+    'ScannersService', '$routeParams', '$location',
     function ($scope, scannersService, $routeParams, $location) {
         console.log('Controller active.');
 
@@ -191,8 +191,8 @@ nfcRfidApp.controller('AdministratorScannersRemoveController', ['$scope',
  * Administrator users controllers
  ******************************************************************************/
 
-nfcRfidApp.controller('AdministratorUsersAddController', ['$scope', 
-    'UsersService', 'TagsService', 'RolesService', 
+nfcRfidApp.controller('AdministratorUsersAddController', ['$scope',
+    'UsersService', 'TagsService', 'RolesService',
     function ($scope, usersService, tagsService, rolesService) {
         $scope.user = {};
 
@@ -265,7 +265,7 @@ nfcRfidApp.controller('AdministratorUsersController', ['$scope', 'UsersService',
     }
 ]);
 
-nfcRfidApp.controller('AdministratorUsersEditController', ['$scope', 
+nfcRfidApp.controller('AdministratorUsersEditController', ['$scope',
     'UsersService', 'RolesService', 'TagsService', '$routeParams', '$location',
     function ($scope, usersService, rolesService, tagsService, $routeParams,
               $location) {
@@ -309,7 +309,7 @@ nfcRfidApp.controller('AdministratorUsersEditController', ['$scope',
                 getAllRolesPromise
                     .done(function (roles) {
                         $scope.roles = roles;
-                        for (var i=0; i<$scope.roles.length; i++) {
+                        for (var i = 0; i < $scope.roles.length; i++) {
                             if ($scope.roles[i].id === activeRoleId) {
                                 $scope.user.role = $scope.roles[i].id;
                                 break;
@@ -330,14 +330,14 @@ nfcRfidApp.controller('AdministratorUsersEditController', ['$scope',
             getUserByIdPromise
                 .done(function (user_all) {
                     $scope.user_all = user_all;
-                    
+
                     $scope.user = {
                         id: user_all.user_id,
                         username: user_all.user_username,
                         password: user_all.user_password,
                         role: user_all.role_id
                     };
-                    
+
                     getRoles(user_all.role_id, function () {
                         getUnassignedTags({
                             id: user_all.tag_id,
@@ -368,7 +368,7 @@ nfcRfidApp.controller('AdministratorUsersEditController', ['$scope',
 ]);
 
 nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
-    'UsersService', '$routeParams', '$location', 
+    'UsersService', '$routeParams', '$location',
     function ($scope, usersService, $routeParams, $location) {
         var id = 0;
 
@@ -404,58 +404,273 @@ nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
  * Moderator user scan rules controllers
  ******************************************************************************/
 
-nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope', 
-    'UserScanRulesService', 'UsersService', 'ScannersService', '$routeParams', 
-    function ($scope, userScanRulesService, usersService, scannersService, 
-              $routeParams) {
-        $scope.userScanRule = {};
+function jsDateToMysqlTime(date) {
+    date = new Date(date);
+    return date.toTimeString().slice(0, 8);
+}
 
-        $scope.user_all = {};
+function jsDateToOdbcTime(date) {
+    return "{ t '" + jsDateToMysqlTime(date) + "' }";
+}
+
+/**
+ * Formats the date like YYYY delimiter MM delimiter DD
+ * @param date
+ * @param delimiter
+ */
+function jsDateFormat(date, delimiter) {
+    var dayOfMonth = date.getDate() + 1;
+    var month = date.getMonth() + 1;
+    var year = date.getFullYear();
+
+    var formatedDate = '';
+    formatedDate += year;
+    formatedDate += delimiter;
+    formatedDate += month >= 10 ? month : '0' + month;
+    formatedDate += delimiter;
+    formatedDate += dayOfMonth >= 10 ? dayOfMonth : '0' + dayOfMonth;
+
+    return formatedDate;
+}
+
+function jsDateToOdbcDate(date) {
+    var delimiter = '-';
+    return "{ d '" + jsDateFormat(date, delimiter) + "' }";
+}
+
+nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
+    'DatabaseQueryService', '$location',
+    function ($scope, databaseQueryService, $location) {
+        $scope.minDateValidFrom = new Date();
+        $scope.userScanRule = {
+            userId: 0,
+            scannerId: 0,
+            responseScannerCommandId: 0,
+            weekDay: 0,
+            timeStart: new Date(),
+            timeEnd: new Date(),
+            validFrom: new Date(),
+            validTo: new Date()
+        };
+
+        $scope.secondsTo0 = function (time) {
+            time.setSeconds(0);
+        };
+
+        $scope.secondsTo0($scope.userScanRule.timeStart);
+        $scope.secondsTo0($scope.userScanRule.timeEnd);
+
+        $scope.users = [];
         $scope.scanners = [];
+        $scope.scannerCommands = [];
 
         $scope.notification = new Notification();
 
         $scope.add = function () {
-            userScanRulesService.add($scope.userScanRule)
+            var query = 'CALL createUserScanRule(' +
+                'user_id, ' +
+                'scanner_id, ' +
+                'response_scanner_command_id, ' +
+                'week_day, ' +
+                'time_start, ' +
+                'time_end, ' +
+                'valid_from, ' +
+                'valid_to)';
+
+            query = query.replace('user_id',
+                $scope.userScanRule.userId);
+            query = query.replace('scanner_id',
+                $scope.userScanRule.scannerId);
+            query = query.replace('response_scanner_command_id',
+                $scope.userScanRule.responseScannerCommandId);
+            query = query.replace('week_day',
+                $scope.userScanRule.weekDay);
+            query = query.replace('time_start',
+                jsDateToOdbcTime($scope.userScanRule.timeStart));
+            query = query.replace('time_end',
+                jsDateToOdbcTime($scope.userScanRule.timeEnd));
+            query = query.replace('valid_from',
+                jsDateToOdbcDate($scope.userScanRule.validFrom));
+            query = query.replace('valid_to',
+                jsDateToOdbcDate($scope.userScanRule.validTo));
+
+            databaseQueryService.procedure({query: query})
                 .done(function (response) {
-                    $scope.notification.message = response.message;
-                    $scope.userScanRule = {};
+                    $location.path('/moderator/userScanRules');
                     $scope.$apply();
+                    console.log(JSON.stringify(response));
                 })
                 .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
+                    console.log(JSON.stringify(response));
                 });
         };
 
-        var getAllScannersPromise = scannersService.getAll();
+        var scannersGetQuery = databaseQueryService.get(
+            'SELECT scanners.id AS id, ' +
+            'scanners.uid AS uid, ' +
+            'scanners.description AS description ' +
+            'FROM scanners '
+        );
 
-        if (getAllScannersPromise) {
-            getAllScannersPromise
-                .done(function (scanners) {
-                    $scope.scanners = scanners;
-                    $scope.userScanRule.scannerId = $scope.scanners[0].id;
-                    $scope.userScanRule.responseScannerCommandId = 
-                        $scope.scanners[0].commands[0].id;
+        function getScannerCommandsForScannerId(id) {
+            $scope.scannerCommands = [];
+
+            var scannerCommandsGetQuery = databaseQueryService.get(
+                'SELECT scanner_commands.id AS id, ' +
+                'scanner_commands.command AS command ' +
+                'FROM scanner_commands ' +
+                'WHERE scanner=' + id
+            );
+
+            if (scannerCommandsGetQuery) {
+                scannerCommandsGetQuery.done(function (scannerCommands) {
+                    $scope.scannerCommands = scannerCommands;
+                    $scope.userScanRule.responseScannerCommandId =
+                        scannerCommands[0].id;
                     $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load roles.');
+                }).fail(function (error) {
+                    console.log(JSON.stringify(error));
                 });
+            }
         }
 
-        var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
+        $scope.queryScannerCommandsForScannerId = function (id) {
+            getScannerCommandsForScannerId(id);
+        };
 
-        if (getAllUnassignedTagsPromise) {
-            getAllUnassignedTagsPromise
-                .done(function (tags) {
-                    $scope.tags = tags;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load tags.');
-                });
+        if (scannersGetQuery) {
+            scannersGetQuery.done(function (scanners) {
+                $scope.scanners = scanners;
+                $scope.userScanRule.scannerId = scanners[0].id;
+                getScannerCommandsForScannerId(scanners[0].id);
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
         }
+
+        var usersGetQuery = databaseQueryService.get(
+            'SELECT users.id AS id, ' +
+            'users.username AS username ' +
+            'FROM users'
+        );
+
+        if (usersGetQuery) {
+            usersGetQuery.done(function (users) {
+                $scope.users = users;
+                $scope.userScanRule.userId = users[0].id;
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+    }
+]);
+
+nfcRfidApp.controller('ModeratorUserScanRulesController', ['$scope',
+    'DatabaseQueryService', function ($scope, databaseQueryService) {
+
+        $scope.userScanRules = [];
+        /**
+         * {
+         *   id: Number,
+         *   username: String,
+         *   scannerUid: String,
+         *   responseCommand: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+
+        var userScanRulesGet = databaseQueryService.get(
+            'SELECT user_scanner_rules.id AS id, ' +
+            'users.username AS username, ' +
+            'scanners.uid AS scannerUid, ' +
+            'scanner_commands.command AS responseCommand, ' +
+            'user_scanner_rules.week_day AS weekDay, ' +
+            'user_scanner_rules.time_start AS timeStart, ' +
+            'user_scanner_rules.time_end AS timeEnd, ' +
+            'user_scanner_rules.valid_from AS validFrom, ' +
+            'user_scanner_rules.valid_to AS validTo ' +
+            'FROM users, scanners, scanner_commands, user_scanner_rules ' +
+            'WHERE users.id = user_scanner_rules.user AND ' +
+            'scanners.id = user_scanner_rules.scanner AND ' +
+            'scanner_commands.id = user_scanner_rules.response_scanner_command'
+        );
+
+        if (userScanRulesGet) {
+            userScanRulesGet.done(function (userScanRules) {
+                $scope.userScanRules = userScanRules;
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+    }
+]);
+
+nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
+    'DatabaseQueryService', '$routeParams', '$location',
+    function ($scope, databaseQueryService, $routeParams, $location) {
+
+        var userScanRuleId = $routeParams.id;
+
+        $scope.userScanRules = [];
+        /**
+         * {
+         *   id: Number,
+         *   username: String,
+         *   scannerUid: String,
+         *   responseCommand: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+
+        var userScanRulesGet = databaseQueryService.get(
+            'SELECT user_scanner_rules.id AS id, ' +
+            'users.username AS username, ' +
+            'scanners.uid AS scannerUid, ' +
+            'scanner_commands.command AS responseCommand, ' +
+            'user_scanner_rules.week_day AS weekDay, ' +
+            'user_scanner_rules.time_start AS timeStart, ' +
+            'user_scanner_rules.time_end AS timeEnd, ' +
+            'user_scanner_rules.valid_from AS validFrom, ' +
+            'user_scanner_rules.valid_to AS validTo ' +
+            'FROM users, scanners, scanner_commands, user_scanner_rules ' +
+            'WHERE users.id = user_scanner_rules.user AND ' +
+            'scanners.id = user_scanner_rules.scanner AND ' +
+            'scanner_commands.id = user_scanner_rules.response_scanner_command AND ' +
+            'user_scanner_rules.id = ' + userScanRuleId
+        );
+
+        if (userScanRulesGet) {
+            userScanRulesGet.done(function (userScanRules) {
+                $scope.userScanRules = userScanRules;
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+
+        $scope.remove = function () {
+            var deleteUserScannerRule = 'CALL deleteUserScannerRule(id)';
+            deleteUserScannerRule = deleteUserScannerRule.replace('id',
+                userScanRuleId);
+            databaseQueryService.procedure({query: deleteUserScannerRule})
+                .done(function (response) {
+                    console.log(JSON.stringify(response));
+                    $location.path('/moderator/userScanRules');
+                    $scope.$apply();
+                }).fail(function (response) {
+                    console.log(JSON.stringify(response));
+                });
+        };
     }
 ]);

@@ -159,7 +159,7 @@ var SecurityService = function (onNotLoggedIn) {
         if (url.indexOf('?') < 0) {
             url += '?'
         }
-        url += 'token=' + userSession.token;
+        url += '&token=' + userSession.token;
 
         return $.ajax(url, ajaxOptions);
     };
@@ -376,6 +376,34 @@ var TagsService = function (securityService, urls) {
             type: 'POST',
             dataType: 'JSON',
             crossDomain: true
+        });
+    };
+};
+
+var DatabaseQueryService = function (securityService) {
+    var modelsGetUrl = '/models';
+    var modelsCreateUrl = '/models/create';
+
+    /**
+     * @param query Select query string.
+     * @returns {Object|*}
+     */
+    this.get = function (query) {
+        return securityService.request(modelsGetUrl + '?query=' + query, {
+            type: 'GET',
+            dataType: 'JSON'
+        });
+    };
+
+    /**
+     * @param query JSON({"query": String})
+     * @returns jQuery AJAX promise.
+     */
+    this.procedure = function (query) {
+        return securityService.request(modelsCreateUrl, {
+            type: 'POST',
+            data: query,
+            dataType: 'JSON'
         });
     };
 };

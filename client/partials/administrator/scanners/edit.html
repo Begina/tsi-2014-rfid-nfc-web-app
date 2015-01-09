@@ -1,50 +1,52 @@
 <div data-ng-include="'partials/administrator/header.html'"></div>
 
-<legend>Edit scanner</legend>
+<legend class="row col-lg-10 col-md-offset-1">Edit scanner</legend>
 
-<div class="row">
-    <div class="col-lg-2"></div>
-    <div class="col-lg-8">
-        <div class="form">
-            <label for="scanner-uid">Unique ID</label>
-            <div id="scanner-uid"
-                 class="form-group">
-                <input type="text" class="form-control" placeholder="Unique ID"
-                       data-ng-model="scanner.uid">
-            </div>
+<div class="form container">
+    <div class="form-group row col-lg-6 col-md-offset-3">
+        <label for="scanner-uid">Unique ID</label>
 
-            <div class="form-group">
-                <label for="scanner-description">Description</label>
+        <div id="scanner-uid"
+             class="form-group">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Unique ID"
+                   data-ng-model="scanner.uid">
+        </div>
+    </div>
+
+    <div class="form-group  row col-lg-6 col-md-offset-3">
+        <label for="scanner-description">Description</label>
                 <textarea id="scanner-description"
                           class="form-control"
                           placeholder="Scanner description..."
                           data-ng-model="scanner.description">
                 </textarea>
-            </div>
+    </div>
 
-            <div class="form-group">
-                <label for="scanner-commands">Commands (comma separated)</label>
-                <input id="scanner-commands"
-                       name="commands"
-                       class="form-control"
-                       placeholder="COMMAND1,COMMAND2,COMMAND3,..." 
-                       ng-model="scanner.commands" 
-                       ng-list>
-            </div>
+    <div class="form-group  row col-lg-6 col-md-offset-3">
+        <label for="scanner-commands">Commands (comma separated)</label>
+        <input id="scanner-commands"
+               name="commands"
+               class="form-control"
+               placeholder="COMMAND1,COMMAND2,COMMAND3,..."
+               ng-model="scanner.commands"
+               ng-list>
+    </div>
 
-            <div class="alert alert-danger" role="alert"
-                 data-ng-class="{true:'', false:'hidden'}[notification
+    <div class="alert alert-danger row col-lg-6 col-md-offset-3"
+         role="alert"
+         data-ng-class="{true:'', false:'hidden'}[notification
                  .hasOccurred()]">
                 <span class="glyphicon glyphicon-exclamation-sign"
                       aria-hidden="true"></span>
-                <span class="sr-only">Error:</span>
-                {{notification.message}}
-            </div>
-
-            <button class="btn btn-default" data-ng-click="update()">
-                <i class="glyphicon glyphicon glyphicon-cloud-upload"></i>
-                Update
-            </button>
-        </div>
+        <span class="sr-only">Error:</span>
+        {{notification.message}}
     </div>
+
+    <button class="btn btn-default  row col-lg-2 col-md-offset-5"
+            data-ng-click="update()">
+        <i class="glyphicon glyphicon glyphicon-cloud-upload"></i>
+        Update
+    </button>
 </div>

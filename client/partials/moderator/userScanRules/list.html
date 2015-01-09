@@ -1,0 +1,91 @@
+<div data-ng-include="'partials/moderator/header.html'"></div>
+
+<style>
+    /*table {*/
+        /*table-layout:fixed;*/
+        /*width:100%;*/
+        /*overflow:hidden;*/
+        /*word-wrap:break-word;*/
+    /*}*/
+</style>
+
+<legend class="row col-lg-10 col-md-offset-1">User scan rules</legend>
+
+<div class="container">
+    <table class="table table-striped row col-lg-10">
+        <thead>
+        <tr>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.username">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.scannerUid">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.responseCommand">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.weekDay">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.validFrom">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.validTo">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.timeStart">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.timeEnd">
+            </th>
+        </tr>
+        <tr>
+            <th>User</th>
+            <th>Scanner UID</th>
+            <th>Response command</th>
+            <th>Week day</th>
+            <th>Valid from</th>
+            <th>Valid to</th>
+            <th>Time start</th>
+            <th>Time end</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-ng-repeat="userScanRule in userScanRules | filter:search_keyword">
+            <td>{{ userScanRule.username }}</td>
+            <td>{{ userScanRule.scannerUid }}</td>
+            <td>{{ userScanRule.responseCommand }}</td>
+            <td>{{ userScanRule.weekDay }}</td>
+            <td>{{ userScanRule.validFrom | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.validTo | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.timeStart | date: 'HH:mm' }}</td>
+            <td>{{ userScanRule.timeEnd | date: 'HH:mm' }}</td>
+            <td>
+                <a class="btn"
+                   href="#/moderator/userScanRules/remove/{{userScanRule.id}}">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                    &nbsp;&nbsp;Delete
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

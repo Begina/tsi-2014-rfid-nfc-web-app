@@ -7,7 +7,7 @@ nfcRfidApp.factory('SecurityService', ['$location', function ($location) {
     return securityService;
 }]);
 
-nfcRfidApp.factory('ScannersService', ['SecurityService', 
+nfcRfidApp.factory('ScannersService', ['SecurityService',
     function (securityService) {
         return new CrudService(securityService, {
             create: serverUrl + '/scanners/create',
@@ -18,7 +18,7 @@ nfcRfidApp.factory('ScannersService', ['SecurityService',
         });
 }]);
 
-nfcRfidApp.factory('ScannerCommandsService', ['SecurityService', 
+nfcRfidApp.factory('ScannerCommandsService', ['SecurityService',
     function (securityService) {
         return new CrudService(securityService, {
             getById: serverUrl + '/scannerCommands/:id'
@@ -45,7 +45,7 @@ nfcRfidApp.factory('RolesService', ['SecurityService', function (securityService
     });
 }]);
 
-nfcRfidApp.factory('TagsService', ['SecurityService', 
+nfcRfidApp.factory('TagsService', ['SecurityService',
     function (securityService) {
         return new TagsService(securityService, {
             create: serverUrl + '/tags/create',
@@ -57,11 +57,16 @@ nfcRfidApp.factory('TagsService', ['SecurityService',
         });
 }]);
 
-nfcRfidApp.factory('UserScanRulesService', ['SecurityService', 
+nfcRfidApp.factory('UserScanRulesService', ['SecurityService',
     function (securityService) {
         return new CrudService(securityService, {
             create: serverUrl + '/userScanRules/create',
             getAll: serverUrl + '/userScanRules',
             remove: serverUrl + '/userScanRules/remove/:id'
         });
+}]);
+
+nfcRfidApp.factory('DatabaseQueryService', ['SecurityService',
+    function (securityService) {
+        return new DatabaseQueryService(securityService);
 }]);

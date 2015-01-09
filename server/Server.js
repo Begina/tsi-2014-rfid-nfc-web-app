@@ -66,6 +66,13 @@ var dbConnectionPool = mysql.createPool({
     database: argv.dbname
 });
 
+// Avoid app termination on invalid SQL.
+dbConnectionPool.on('connection', function (connection) {
+    connection.on('error', function (error) {
+        console.log(error);
+    });
+});
+
 var securityService = new SecurityService(dbConnectionPool);
 var scannersService = new ScannersService(dbConnectionPool);
 var scannerCommandsService = new ScannerCommandsService(dbConnectionPool);
@@ -90,7 +97,7 @@ var ROUTE = {
     usersId: '/users/:id',
     usersUpdate: '/users/update',
     usersRemoveId: '/users/remove/:id',
-    roles:'/roles',
+    roles: '/roles',
     tagsCreate: '/tags/create',
     tags: '/tags',
     tagsUnassigned: '/tags/unassigned',
@@ -98,7 +105,9 @@ var ROUTE = {
     tagsUpdate: '/tags/update',
     tagsRemoveId: '/tags/remove/:id',
     userScanRulesCreate: '/userScanRules/create',
-    scannerCommands: '/scannerCommands/:id'
+    scannerCommands: '/scannerCommands/:id',
+    models: '/models',
+    modelsCreate: '/models/create'
 };
 
 /********************
@@ -112,12 +121,12 @@ app.use(bodyParser.urlencoded({extended: true})); // for parsing
                                                   // application/x-www-form-urlencoded
 
 // Enable CORS
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
+//app.use(function (req, res, next) {
+//    res.header("Access-Control-Allow-Origin", "*");
+//    res.header("Access-Control-Allow-Headers",
+//        "Origin, X-Requested-With, Content-Type, Accept");
+//    next();
+//});
 
 // Administrator required resources.
 app.use([ROUTE.scannersCreate, ROUTE.scannersUpdate,
@@ -438,6 +447,89 @@ app.post(ROUTE.userScanRulesCreate, function (req, res) {
     };
 
     userScanRulesService.create(userScanRule, onUserScanRuleCreated);
+});
+
+/*******************************************************************************
+ * Get any model using dynamic querying.
+ ******************************************************************************/
+
+/**
+ * Parameters:
+ *
+ * GET /models?query=SELECT columns FROM tables WHERE ...
+ */
+
+function parseQueryStringVariable(expressQueryObject, variableName) {
+    var variable = null;
+    if (expressQueryObject.hasOwnProperty(variableName)) {
+        variable = expressQueryObject[variableName];
+    }
+
+    return variable;
+}
+
+function isQueryValid(query) {
+    // TODO: Access rights restriction and SQL injection guard.
+    return true;
+}
+
+app.get(ROUTE.models, function (req, res) {
+    var query = parseQueryStringVariable(req.query, 'query');
+
+    console.log(query);
+
+    if (!isQueryValid(query)) {
+        res.status(403);
+        res.send({message: 'Query invalid.'});
+    }
+
+    dbConnectionPool.query(query, function (err, results) {
+        if (err) {
+            res.status(400);
+            res.send({message: err});
+            return;
+        }
+
+        res.send(results);
+    });
+});
+
+/**
+ * Parameters:
+ *
+ * POST /models/create
+ *
+ * Input:
+ * {
+ *   "query": String
+ * }
+ */
+app.post(ROUTE.modelsCreate, function (req, res) {
+    var query = req.body;
+
+    if (!(query &&
+        query.hasOwnProperty('query'))) {
+        res.status(400);
+        res.send({message: 'Invalid JSON.'});
+        return;
+    }
+
+    if (!isQueryValid(query)) {
+        res.status(403);
+        res.send({message: 'Query invalid.'});
+        return;
+    }
+
+    dbConnectionPool.query(query.query, [], function (err, result) {
+            if (err) {
+                res.status(400);
+                res.send({message: err});
+                return;
+            }
+
+            res.send({message: 'Procedure executed successfully.'});
+        }
+    );
 });
 
 /*******************************************************************************

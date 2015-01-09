@@ -171,7 +171,6 @@ CREATE TABLE IF NOT EXISTS scanners (
   id          INT         NOT NULL AUTO_INCREMENT,
   uid         VARCHAR(30) NOT NULL,
   description VARCHAR(300),
-  commands    VARCHAR(1000) NOT NULL,
   PRIMARY KEY pk_scanners(id),
   UNIQUE uq_scanners_uid(uid)
 );
@@ -200,8 +199,8 @@ CREATE PROCEDURE createScanner(
     DECLARE i INT DEFAULT 1;
     DECLARE last_occurrence INT DEFAULT 1;
 
-    INSERT INTO scanners(uid, description, commands)
-    VALUES (uid, description, SUBSTRING(commands, 1, CHAR_LENGTH(commands)-1));
+    INSERT INTO scanners(uid, description)
+    VALUES (uid, description);
 
     SELECT LAST_INSERT_ID()
     INTO scanner_id;
@@ -238,8 +237,7 @@ CREATE PROCEDURE updateScanner(
 
     UPDATE scanners 
     SET scanners.uid = uid, 
-        scanners.description = description,
-        scanners.commands = SUBSTRING(commands, 1, CHAR_LENGTH(commands)-1)
+        scanners.description = description
     WHERE scanners.id = scanner_id;
 
     DELETE FROM scanner_commands
@@ -334,6 +332,39 @@ CREATE PROCEDURE createUserDayOfWeekScanRule(
             response_scanner_command_id,
             valid_from,
             valid_to);
+  END
+
+$$
+
+CREATE PROCEDURE createUserScanRule(
+  user_id                     BIGINT,
+  scanner_id                  INT,
+  response_scanner_command_id INT,
+  week_day                    INT,
+  time_start                  TIME,
+  time_end                    TIME,
+  valid_from                  DATE,
+  valid_to                    DATE
+)
+  BEGIN
+    INSERT INTO user_scanner_rules (user,
+                                    scanner,
+                                    response_scanner_command,
+                                    week_day,
+                                    time_start,
+                                    time_end,
+                                    valid_from,
+                                    valid_to)
+    VALUES (user_id,
+            scanner_id,
+            response_scanner_command_id,
+            week_day,
+            time_start,
+            time_end,
+            valid_from,
+            valid_to);
+
+    SELECT LAST_INSERT_ID();
   END
 
 $$

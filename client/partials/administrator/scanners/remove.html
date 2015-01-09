@@ -1,23 +1,31 @@
-<legend>Remove scanner</legend>
+<div data-ng-include="'partials/administrator/header.html'"></div>
 
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>UID</th>
-        <th>Description</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>{{ scanner.uid }}</td>
-        <td>{{ scanner.description }}</td>
-    </tr>
-    </tbody>
-</table>
+<legend class="row col-lg-10 col-md-offset-1">Remove scanner</legend>
 
-<button class="btn btn-default" data-ng-click="remove()">
-    <i class="glyphicon glyphicon-ok"></i> Remove
-</button>
-<a href="#/administrator/scanners" class="btn btn-default">
-    <i class="glyphicon glyphicon-remove"></i> Cancel
-</a>
+<div class="container">
+    <h2>Are you sure you want to delete the scanner:</h2>
+    <table class="table table-striped row col-lg-10">
+        <thead>
+        <tr>
+            <th>UID</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ scanner.uid }}</td>
+            <td>{{ scanner.description }}</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="row col-lg-8 col-md-offset-3">
+        <button class="btn btn-default col-lg-3" data-ng-click="remove()">
+            <i class="glyphicon glyphicon-ok"></i> Remove
+        </button>
+        <a href="#/administrator/scanners"
+           class="btn btn-default col-lg-3 col-md-offset-1">
+            <i class="glyphicon glyphicon-remove"></i> Cancel
+        </a>
+    </div>
+</div>

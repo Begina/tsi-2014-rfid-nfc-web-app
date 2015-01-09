@@ -1,38 +1,44 @@
 <div data-ng-include="'partials/administrator/header.html'"></div>
 
-<legend>Scanners</legend>
+<legend class="row col-lg-10 col-md-offset-1">Scanners</legend>
 
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th><input type="text" data-ng-model="search_keyword.uid"></th>
-        <th><input type="text" data-ng-model="search_keyword.description"></th>
-        <th></th>
-    </tr>
-    <tr>
-        <th>UID</th>
-        <th>Commands</th>
-        <th>Description</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr data-ng-repeat="scanner in scanners | filter:search_keyword">
-        <td>{{ scanner.uid }}</td>
-        <td>{{ scanner.commands }}</td>
-        <td>{{ scanner.description }}</td>
-        <td>
-            <a class="btn"
-               href="#/administrator/scanners/edit/{{scanner.id}}">
-                <span class="glyphicon glyphicon-pencil"></span>
-                &nbsp;&nbsp;Edit
-            </a>
-            <a class="btn"
-               href="#/administrator/scanners/remove/{{scanner.id}}">
-                <span class="glyphicon glyphicon-pencil"></span>
-                &nbsp;&nbsp;Delete
-            </a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+<div class="container">
+    <table class="table table-striped col-lg-10">
+        <thead>
+        <tr>
+            <th><input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.uid"></th>
+            <th><input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.description"></th>
+            <th></th>
+        </tr>
+        <tr>
+            <th>UID</th>
+            <th>Commands</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-ng-repeat="scanner in scanners | filter:search_keyword">
+            <td>{{ scanner.uid }}</td>
+            <td>{{ scanner.commands }}</td>
+            <td>{{ scanner.description }}</td>
+            <td>
+                <a class="btn"
+                   href="#/administrator/scanners/edit/{{scanner.id}}">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                    &nbsp;&nbsp;Edit
+                </a>
+                <a class="btn"
+                   href="#/administrator/scanners/remove/{{scanner.id}}">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                    &nbsp;&nbsp;Delete
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
