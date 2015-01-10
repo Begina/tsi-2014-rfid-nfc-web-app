@@ -21,7 +21,7 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
                         $location.path('/moderator/dashboard');
                         $scope.$apply();
                     } else if (userSession.role === ROLE.basic) {
-                        $location.path('/basic/dashboard');
+                        $location.path('/user/dashboard');
                         $scope.$apply();
                     }
                 })
@@ -438,6 +438,10 @@ function jsDateToOdbcDate(date) {
     return "{ d '" + jsDateFormat(date, delimiter) + "' }";
 }
 
+function secondsTo0(time) {
+    time.setSeconds(0);
+}
+
 nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
     'DatabaseQueryService', '$location',
     function ($scope, databaseQueryService, $location) {
@@ -454,7 +458,7 @@ nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
         };
 
         $scope.secondsTo0 = function (time) {
-            time.setSeconds(0);
+            secondsTo0(time);
         };
 
         $scope.secondsTo0($scope.userScanRule.timeStart);
@@ -672,5 +676,142 @@ nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
                     console.log(JSON.stringify(response));
                 });
         };
+    }
+]);
+
+nfcRfidApp.controller('UserRequestsAddController', ['$scope',
+    'DatabaseQueryService', '$location', 'SecurityService',
+    function ($scope, databaseQueryService, $location, securityService) {
+
+        $scope.accessRequest = {
+            scannerId: 0,
+            weekDay: 0,
+            timeStart: new Date(),
+            timeEnd: new Date(),
+            validFrom: new Date(),
+            validTo: new Date()
+        };
+
+        $scope.minDateValidFrom = new Date();
+
+        $scope.notification = new Notification();
+
+        $scope.secondsTo0 = function (time) {
+            secondsTo0(time);
+        };
+
+        $scope.scanners = [];
+        /**
+         * {
+         *   id: Number,
+         *   scannerDescription: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+
+        var scannersGet = databaseQueryService.get(
+            'SELECT id AS id, ' +
+            'description AS description ' +
+            'FROM scanners'
+        );
+
+        if (scannersGet) {
+            scannersGet.done(function (scanners) {
+                $scope.scanners = scanners;
+                $scope.accessRequest.scannerId = scanners[0].id;
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+
+        $scope.add = function () {
+            securityService.request('/accessRequests/create', {
+                type: 'post',
+                data: $scope.accessRequest,
+                dataType: 'json'
+            }).done(function (response) {
+                $location.path('/user/dashboard');
+                $scope.$apply();
+            }).fail(function (response) {
+                console.log(JSON.stringify(response));
+            });
+        };
+    }
+]);
+
+nfcRfidApp.controller('UserRequestsController', ['$scope',
+    'DatabaseQueryService', '$location', 'SecurityService',
+    function ($scope, databaseQueryService, $location, securityService) {
+
+        $scope.accessRequests = [];
+        /**
+         * {
+         *   id: Number,
+         *   scannerUid: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+
+        $scope.notification = new Notification();
+
+        var accessRequestsGet = securityService.request(
+            '/accessRequests', {
+                type: 'get',
+                dataType: 'json'
+            });
+
+        if (accessRequestsGet) {
+            accessRequestsGet.done(function (accessRequests) {
+                $scope.accessRequests = accessRequests;
+                $scope.$apply();
+            }).fail(function (response) {
+                console.log(JSON.stringify(response));
+            });
+        }
+    }
+]);
+
+nfcRfidApp.controller('UserAccessRightsController', ['$scope',
+    'DatabaseQueryService', '$location', 'SecurityService',
+    function ($scope, databaseQueryService, $location, securityService) {
+
+        $scope.accessRights = [];
+        /**
+         * {
+         *   id: Number,
+         *   scannerUid: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+
+        $scope.notification = new Notification();
+
+        var accessRights = securityService.request(
+            '/accessRights', {
+                type: 'get',
+                dataType: 'json'
+            });
+
+        if (accessRights) {
+            accessRights.done(function (accessRights) {
+                $scope.accessRights = accessRights;
+                $scope.$apply();
+            }).fail(function (response) {
+                console.log(JSON.stringify(response));
+            });
+        }
     }
 ]);

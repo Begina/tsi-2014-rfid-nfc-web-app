@@ -1,0 +1,61 @@
+<div data-ng-include="'partials/user/header.html'"></div>
+
+<legend class="row col-lg-10 col-md-offset-1">Access rights</legend>
+
+<div class="container">
+    <table class="table table-striped row col-lg-10">
+        <thead>
+        <tr>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.scannerUid">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.weekDay">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.validFrom">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.validTo">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.timeStart">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.timeEnd">
+            </th>
+        </tr>
+        <tr>
+            <th>Scanner UID</th>
+            <th>Week day</th>
+            <th>Valid from</th>
+            <th>Valid to</th>
+            <th>Time start</th>
+            <th>Time end</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-ng-repeat="accessRight in accessRights |
+                            filter:search_keyword">
+            <td>{{ accessRight.scannerUid }}</td>
+            <td>{{ accessRight.weekDay }}</td>
+            <td>{{ accessRight.validFrom | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ accessRight.validTo | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ accessRight.timeStart | date: 'HH:mm' }}</td>
+            <td>{{ accessRight.timeEnd | date: 'HH:mm' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

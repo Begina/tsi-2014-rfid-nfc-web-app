@@ -107,12 +107,16 @@ var ROUTE = {
     userScanRulesCreate: '/userScanRules/create',
     scannerCommands: '/scannerCommands/:id',
     models: '/models',
-    modelsCreate: '/models/create'
+    modelsCreate: '/models/create',
+    modelProcedures: '/modes/procedures',
+    accessRequests: '/accessRequests',
+    accessRequestsCreate: '/accessRequests/create',
+    accessRights: '/accessRights'
 };
 
-/********************
+/*******************************************************************************
  * Filters
- ********************/
+ ******************************************************************************/
 
 // Automatic request JSON parsing
 var bodyParser = require('body-parser');
@@ -160,9 +164,9 @@ app.use([ROUTE.scanners], function (req, res, next) {
     }
 });
 
-/********************
+/*******************************************************************************
  * Authentication
- ********************/
+ ******************************************************************************/
 
 /**
  * Request object: {username: String, password: String}
@@ -200,9 +204,9 @@ app.post(ROUTE.logout, function (req, res) {
     securityService.logout(userSession, onLoggedOut, onFail);
 });
 
-/********************
+/*******************************************************************************
  * Scanners
- ********************/
+ ******************************************************************************/
 
 /**
  * Request object: {uid:String, description:String}
@@ -265,9 +269,9 @@ app.post(ROUTE.scannersRemoveId, function (req, res) {
     scannersService.remove(id, onScannerRemoved);
 });
 
-/********************
+/*******************************************************************************
  * Scanner commands
- ********************/
+ ******************************************************************************/
 app.get(ROUTE.scannerCommands, function (req, res) {
     var scannerId = req.params.id;
 
@@ -278,9 +282,9 @@ app.get(ROUTE.scannerCommands, function (req, res) {
     scannerCommandsService.getById(scannerId, onScannerCommands);
 });
 
-/********************
+/*******************************************************************************
  * Users
- ********************/
+ ******************************************************************************/
 
 /**
  * Request object: {username:String, password:String, role:Number, nfc:Number}
@@ -347,9 +351,9 @@ app.post(ROUTE.usersRemoveId, function (req, res) {
     usersService.remove(id, onUserRemoved);
 });
 
-/********************
+/*******************************************************************************
  * Roles
- ********************/
+ ******************************************************************************/
 app.get(ROUTE.roles, function (req, res) {
     var onRoles = function (roles) {
         res.json(roles);
@@ -358,9 +362,9 @@ app.get(ROUTE.roles, function (req, res) {
     rolesService.getAll(onRoles);
 });
 
-/********************
+/*******************************************************************************
  * tags
- ********************/
+ ******************************************************************************/
 
 /**
  * Request object: {tag:String, description:String}
@@ -435,9 +439,9 @@ app.post(ROUTE.tagsRemoveId, function (req, res) {
     tagsService.remove(id, onTagRemoved);
 });
 
-/********************
+/*******************************************************************************
  * User scan rules
- ********************/
+ ******************************************************************************/
 
 app.post(ROUTE.userScanRulesCreate, function (req, res) {
     var userScanRule = req.body;
@@ -447,6 +451,123 @@ app.post(ROUTE.userScanRulesCreate, function (req, res) {
     };
 
     userScanRulesService.create(userScanRule, onUserScanRuleCreated);
+});
+
+/*******************************************************************************
+ * Access rights
+ ******************************************************************************/
+
+/**
+ * Request:
+ *
+ * {
+ *   "scannerId": Number,
+ *   "weekDay": Number (0-6),
+ *   "timeStart": Time (HH:MM:SS),
+ *   "timeEnd": Time (HH:MM:SS),
+ *   "validFrom": Date (YYYY-MM-DD),
+ *   "validTo": Date (YYYY-MM-DD)
+ * }
+ */
+app.post(ROUTE.accessRequestsCreate, function (req, res) {
+    var accessRequest = req.body;
+    var token = req.query.token;
+    securityService.userIdByToken(token, function (userId) {
+        dbConnectionPool.query('CALL createAccessRequest(?,?,?,?,?,?,?)',
+            [userId, accessRequest.scannerId, accessRequest.weekDay,
+                accessRequest.timeStart, accessRequest.timeEnd,
+                accessRequest.validFrom, accessRequest.validTo],
+            function (err, result) {
+                if (err) {
+                    res.status(400);
+                    res.send({message: err});
+                    return;
+                }
+
+                res.send({message: 'Procedure executed successfully.'});
+            }
+        );
+    });
+});
+
+/**
+ * Requires token.
+ * {
+ *   "scannerUid": String,
+ *   "weekDay": Number (0-6),
+ *   "timeStart": Time (HH:MM:SS),
+ *   "timeEnd": Time (HH:MM:SS),
+ *   "validFrom": Date (YYYY-MM-DD),
+ *   "validTo": Date (YYYY-MM-DD)
+ * }
+ */
+app.get(ROUTE.accessRequests, function (req, res) {
+    var token = req.query.token;
+    if (securityService.isRole(token, ROLE.basic)) {
+        securityService.userIdByToken(token, function (userId) {
+            dbConnectionPool.query('SELECT scanners.uid AS scannerUid, ' +
+                'access_requests.week_day AS weekDay, ' +
+                'access_requests.time_start AS timeStart, ' +
+                'access_requests.time_end AS timeEnd, ' +
+                'access_requests.valid_from AS validFrom, ' +
+                'access_requests.valid_to AS validTo ' +
+                'FROM users, scanners, access_requests ' +
+                'WHERE scanners.id = access_requests.scanner AND ' +
+                'users.id = access_requests.user AND ' +
+                'users.id = ?',
+                [userId],
+                function (err, results) {
+                    if (err) {
+                        res.status(400);
+                        res.send({message: err});
+                        return;
+                    }
+
+                    res.send(results);
+                }
+            );
+        })
+    }
+});
+
+/**
+ * Requires token.
+ * {
+ *   "scannerUid": String,
+ *   "weekDay": Number (0-6),
+ *   "timeStart": Time (HH:MM:SS),
+ *   "timeEnd": Time (HH:MM:SS),
+ *   "validFrom": Date (YYYY-MM-DD),
+ *   "validTo": Date (YYYY-MM-DD)
+ * }
+ */
+app.get(ROUTE.accessRights, function (req, res) {
+    var token = req.query.token;
+    if (securityService.isRole(token, ROLE.basic)) {
+        securityService.userIdByToken(token, function (userId) {
+            dbConnectionPool.query('SELECT scanners.uid AS scannerUid, ' +
+                'user_scanner_rules.week_day AS weekDay, ' +
+                'user_scanner_rules.time_start AS timeStart, ' +
+                'user_scanner_rules.time_end AS timeEnd, ' +
+                'user_scanner_rules.valid_from AS validFrom, ' +
+                'user_scanner_rules.valid_to AS validTo ' +
+                'FROM users, scanners, user_scanner_rules ' +
+                'WHERE scanners.id = user_scanner_rules.scanner AND ' +
+                'users.id = user_scanner_rules.user AND ' +
+                'users.id = ?',
+                [userId],
+                function (err, results) {
+                    if (err) {
+                        res.status(400);
+                        res.send({message: err});
+                        return;
+                    }
+
+                    res.send(results);
+                }
+            );
+        })
+    }
 });
 
 /*******************************************************************************
@@ -468,8 +589,38 @@ function parseQueryStringVariable(expressQueryObject, variableName) {
     return variable;
 }
 
+function isSqlInjection(query) {
+    if (query.indexOf('--') >= 0 ||
+        query.indexOf('#') >= 0 ||
+        query.indexOf('/*') >= 0 || query.indexOf('*/') >= 0) {
+        return true;
+    }
+
+    return false;
+}
+
+function isSqlQueryAllowed(query) {
+    if (query.indexOf('DELETE') >= 0 ||
+        query.indexOf('INSERT') >= 0) {
+
+    }
+}
+
+function isCreateAccessRequestValid(query, loggedInUserId) {
+    var start = 'CALL createAccessRequest(';
+    var end = ')';
+
+    if (query.indexOf(start) != 0 || query.indexOf(end) != query.length - 1) {
+        return false;
+    }
+
+
+    var givenUserId = start.length;
+
+}
+
 function isQueryValid(query) {
-    // TODO: Access rights restriction and SQL injection guard.
+    // TODO: Access rights restriction.
     return true;
 }
 
@@ -530,6 +681,80 @@ app.post(ROUTE.modelsCreate, function (req, res) {
             res.send({message: 'Procedure executed successfully.'});
         }
     );
+});
+
+/*******************************************************************************
+ * Generic procedure calls.
+ ******************************************************************************/
+
+var allowedCalls = {};
+allowedCalls['CALL createAccessRequest(?,?,?,?,?,?,?)'] = {
+    validateParameters: function (parameters, token, onValid, onInvalid) {
+        securityService.userIdByToken(token, function (userId) {
+            if (parameters[0] != userId) {
+                onInvalid();
+                return;
+            }
+
+            onValid();
+        });
+    }
+};
+
+function isAllowed(procedure, allowedCalls) {
+    return allowedCalls.hasOwnProperty(procedure);
+}
+
+/**
+ * Request:
+ * {
+ *   "procedure": String,
+ *   "parameters": [String]
+ * }
+ */
+app.post(ROUTE.modelProcedures, function (req, res) {
+    var procedure = req.body;
+
+    if (!procedure.hasOwnProperty('procedure') || !procedure.hasOwnProperty('parameters')) {
+        res.status(400);
+        res.send({message: 'Invalid JSON.'});
+        return;
+    }
+
+    if (!isAllowed(procedure.procedure, allowedCalls)) {
+        res.status(403);
+        res.send({message: 'Procedure does not exist.'});
+        return;
+    }
+
+    var token = req.query.token;
+    if (!token) {
+        res.status(403);
+        res.send({message: 'Token invalid.'});
+        return;
+    }
+
+    var onSuccess = function () {
+        dbConnectionPool.query(procedure.procedure, procedure.parameters,
+            function (err, result) {
+                if (err) {
+                    res.status(400);
+                    res.send({message: err});
+                    return;
+                }
+
+                res.send({message: 'Procedure executed successfully.'});
+            }
+        );
+    };
+
+    var onFail = function () {
+        res.status(400);
+        res.send({message: 'Invalid request.'});
+    };
+
+    allowedCalls[procedure.procedure].validateParameters(procedure.parameters,
+        token, onSuccess, onFail);
 });
 
 /*******************************************************************************

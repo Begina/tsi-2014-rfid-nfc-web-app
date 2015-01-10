@@ -1,14 +1,14 @@
-// Type definition
-UserSession = function (username, key, role) {
-    this.username = username;
-    this.key = key;
-    this.role = role;
-};
-
 var SecurityService = function (dbConnectionPool) {
     var me = this;
 
     var userSessions = [];
+    /**
+     * {
+     *   username: String,
+     *   token: String,
+     *   role: Number
+     * }
+     */
 
     var generateToken = function (username, password) {
         return username + password; // TODO: Improve key generation algorithm.
@@ -54,6 +54,17 @@ var SecurityService = function (dbConnectionPool) {
             var us = userSessions[i];
             if (us.username === username) {
                 return us;
+            }
+        }
+
+        return null;
+    };
+
+    var getUsernameByToken = function (token) {
+        for (var i = 0; i < userSessions.length; i++) {
+            var us = userSessions[i];
+            if (us.token === token) {
+                return us.username;
             }
         }
 
@@ -127,6 +138,27 @@ var SecurityService = function (dbConnectionPool) {
         }
 
         return false;
+    };
+
+    /**
+     * Returns null if the key/token is invalid.
+     * Returns the id of the user if the key/token is valid.
+     */
+    this.userIdByToken = function (token, onUserId) {
+        if (!onUserId) {
+            return;
+        }
+
+        var username = getUsernameByToken(token);
+        if (username === null) {
+            onUserId(null);
+            return;
+        }
+
+        var query = 'SELECT id FROM users WHERE username=?';
+        dbConnectionPool.query(query, [username], function (err, results) {
+            onUserId(results[0].id);
+        });
     };
 };
 

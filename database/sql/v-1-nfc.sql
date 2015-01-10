@@ -50,8 +50,8 @@ $$
 CREATE PROCEDURE createUser(
   username VARCHAR(50),
   password VARCHAR(512),
-  role_id   INT,
-  tag_id    INT
+  role_id  INT,
+  tag_id   INT
 )
   BEGIN
     DECLARE user_id BIGINT DEFAULT 0;
@@ -87,28 +87,28 @@ AS
 $$
 
 CREATE PROCEDURE updateUser(
-  user_id   BIGINT,
+  user_id  BIGINT,
   username VARCHAR(50),
   password VARCHAR(512),
-  role_id   INT,
-  tag_id    INT
+  role_id  INT,
+  tag_id   INT
 )
   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION ROLLBACK;
     START TRANSACTION;
-      UPDATE users
-      SET username = username,
-          password = password,
-          role     = role_id
-      WHERE id = user_id;
+    UPDATE users
+    SET username = username,
+      password   = password,
+      role       = role_id
+    WHERE id = user_id;
 
-      UPDATE tags
-      SET user = NULL
-      WHERE user = user_id;
+    UPDATE tags
+    SET user = NULL
+    WHERE user = user_id;
 
-      UPDATE tags
-      SET user = user_id
-      WHERE id = tag_id;
+    UPDATE tags
+    SET user = user_id
+    WHERE id = tag_id;
 
     COMMIT;
   END
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS scanner_commands (
   command VARCHAR(50),
   scanner INT NOT NULL,
   PRIMARY KEY pk_scanner_commands(id),
-  FOREIGN KEY fk_scanner_commands_scanners(scanner) REFERENCES scanners(id)
+  FOREIGN KEY fk_scanner_commands_scanners(scanner) REFERENCES scanners (id)
 );
 
 $$
@@ -199,26 +199,27 @@ CREATE PROCEDURE createScanner(
     DECLARE i INT DEFAULT 1;
     DECLARE last_occurrence INT DEFAULT 1;
 
-    INSERT INTO scanners(uid, description)
+    INSERT INTO scanners (uid, description)
     VALUES (uid, description);
 
     SELECT LAST_INSERT_ID()
     INTO scanner_id;
 
     indefinite_loop: WHILE i > 0 DO
-      SELECT LOCATE(',', commands, i+1)
+      SELECT LOCATE(',', commands, i + 1)
       INTO i;
 
-      IF i=0 THEN
+      IF i = 0
+      THEN
         LEAVE indefinite_loop;
       END IF;
 
-      # 'PERMIT,DENY,'
-      INSERT INTO scanner_commands(command, scanner)
-      VALUES (SUBSTRING(commands, last_occurrence, i-last_occurrence), 
+# 'PERMIT,DENY,'
+      INSERT INTO scanner_commands (command, scanner)
+      VALUES (SUBSTRING(commands, last_occurrence, i - last_occurrence),
               scanner_id);
 
-      SELECT i+1
+      SELECT i + 1
       INTO last_occurrence;
     END WHILE indefinite_loop;
   END
@@ -235,27 +236,28 @@ CREATE PROCEDURE updateScanner(
     DECLARE i INT DEFAULT 1;
     DECLARE last_occurrence INT DEFAULT 1;
 
-    UPDATE scanners 
-    SET scanners.uid = uid, 
-        scanners.description = description
+    UPDATE scanners
+    SET scanners.uid       = uid,
+      scanners.description = description
     WHERE scanners.id = scanner_id;
 
     DELETE FROM scanner_commands
     WHERE scanner_commands.scanner = scanner_id;
 
     indefinite_loop: WHILE i > 0 DO
-      SELECT LOCATE(',', commands, i+1)
+      SELECT LOCATE(',', commands, i + 1)
       INTO i;
 
-      IF i=0 THEN
+      IF i = 0
+      THEN
         LEAVE indefinite_loop;
       END IF;
 
-      INSERT INTO scanner_commands(command, scanner)
-      VALUES (SUBSTRING(commands, last_occurrence, i-last_occurrence), 
+      INSERT INTO scanner_commands (command, scanner)
+      VALUES (SUBSTRING(commands, last_occurrence, i - last_occurrence),
               scanner_id);
 
-      SELECT i+1
+      SELECT i + 1
       INTO last_occurrence;
     END WHILE indefinite_loop;
   END
@@ -286,10 +288,10 @@ CREATE TABLE IF NOT EXISTS user_scanner_rules (
   scanner                  INT    NOT NULL,
   response_scanner_command INT    NOT NULL,
   week_day                 INT             DEFAULT NULL,
-  time_start               TIME,
-  time_end                 TIME,
-  valid_from               DATE,
-  valid_to                 DATE,
+  time_start               TIME   NOT NULL,
+  time_end                 TIME   NOT NULL,
+  valid_from               DATE   NOT NULL,
+  valid_to                 DATE   NOT NULL,
 
   PRIMARY KEY pk_user_scanner_rules(id),
 
@@ -399,20 +401,20 @@ $$
 CREATE VIEW user_scanner_rules_all
 AS
   SELECT
-    users.id                         AS user_id,
-    users.username                   AS user_username,
-    users.password                   AS user_password,
-    scanners.id                      AS scanner_id,
-    scanners.uid                     AS scanner_uid,
-    scanners.description             AS scanner_description,
-    scanner_commands.id              AS scanner_command_id,
-    scanner_commands.command         AS scanner_command,
-    user_scanner_rules.id            AS user_scanner_rule_id,
-    user_scanner_rules.week_day      AS user_scanner_rule_week_day,
-    user_scanner_rules.time_start    AS user_scanner_rule_time_start,
-    user_scanner_rules.time_end      AS user_scanner_rule_time_end,
-    user_scanner_rules.valid_from    AS user_scanner_rules_valid_from,
-    user_scanner_rules.valid_to      AS user_scanner_rules_valid_to
+    users.id                      AS user_id,
+    users.username                AS user_username,
+    users.password                AS user_password,
+    scanners.id                   AS scanner_id,
+    scanners.uid                  AS scanner_uid,
+    scanners.description          AS scanner_description,
+    scanner_commands.id           AS scanner_command_id,
+    scanner_commands.command      AS scanner_command,
+    user_scanner_rules.id         AS user_scanner_rule_id,
+    user_scanner_rules.week_day   AS user_scanner_rule_week_day,
+    user_scanner_rules.time_start AS user_scanner_rule_time_start,
+    user_scanner_rules.time_end   AS user_scanner_rule_time_end,
+    user_scanner_rules.valid_from AS user_scanner_rules_valid_from,
+    user_scanner_rules.valid_to   AS user_scanner_rules_valid_to
   FROM users
     JOIN user_scanner_rules
       ON user_scanner_rules.user = users.id
@@ -441,11 +443,11 @@ $$
 ################################################################################
 
 CREATE TABLE IF NOT EXISTS user_scan_times (
-  id        BIGINT    NOT NULL AUTO_INCREMENT,
-  user      BIGINT    NOT NULL,
-  scanner   INT       NOT NULL,
-  command   INT       NOT NULL,
-  timestamp TIMESTAMP                          DEFAULT CURRENT_TIMESTAMP,
+  id        BIGINT NOT NULL AUTO_INCREMENT,
+  user      BIGINT NOT NULL,
+  scanner   INT    NOT NULL,
+  command   INT    NOT NULL,
+  timestamp TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY pk_user_scan_times(id),
 
@@ -458,5 +460,58 @@ CREATE TABLE IF NOT EXISTS user_scan_times (
   FOREIGN KEY fk_user_scan_times_scanner_commands(command)
   REFERENCES scanner_commands (id)
 );
+
+$$
+
+################################################################################
+## Users access requests.
+################################################################################
+
+CREATE TABLE IF NOT EXISTS access_requests (
+  id         BIGINT NOT NULL AUTO_INCREMENT,
+  user       BIGINT NOT NULL,
+  scanner    INT    NOT NULL,
+  week_day   INT             DEFAULT NULL,
+  time_start TIME   NOT NULL,
+  time_end   TIME   NOT NULL,
+  valid_from DATE   NOT NULL,
+  valid_to   DATE   NOT NULL,
+
+  PRIMARY KEY pk_user_scanner_rules(id),
+
+  FOREIGN KEY fk_user_scanner_rules_users(user)
+  REFERENCES users (id),
+
+  FOREIGN KEY fk_user_scanner_rules_scanners(scanner)
+  REFERENCES scanners (id)
+);
+
+$$
+
+CREATE PROCEDURE createAccessRequest(
+  user_id    BIGINT,
+  scanner_id INT,
+  week_day   INT,
+  time_start TIME,
+  time_end   TIME,
+  valid_from DATE,
+  valid_to   DATE
+)
+  BEGIN
+    INSERT INTO access_requests (user,
+                                 scanner,
+                                 week_day,
+                                 time_start,
+                                 time_end,
+                                 valid_from,
+                                 valid_to)
+    VALUES (user_id,
+            scanner_id,
+            week_day,
+            time_start,
+            time_end,
+            valid_from,
+            valid_to);
+  END
 
 $$

@@ -56,6 +56,25 @@ nfcRfidApp.config(function ($routeProvider) {
             templateUrl: 'partials/moderator/userScanRules/remove.html',
             controller: 'ModeratorUserScanRulesRemoveController'
         })
+        .when('/user/requests/add', {
+            templateUrl: 'partials/user/requests/add.html',
+            controller: 'UserRequestsAddController'
+        })
+        .when('/user/dashboard', {
+            templateUrl: 'partials/user/dashboard.html'
+        })
+        .when('/user/requests/add', {
+            templateUrl: 'partials/user/requests/add.html',
+            controller: 'UserRequestsAddController'
+        })
+        .when('/user/requests', {
+            templateUrl: 'partials/user/requests/list.html',
+            controller: 'UserRequestsController'
+        })
+        .when('/user/accessRights', {
+            templateUrl: 'partials/user/accessRights/list.html',
+            controller: 'UserAccessRightsController'
+        })
         .otherwise({
             redirectTo: '/login'
         });
