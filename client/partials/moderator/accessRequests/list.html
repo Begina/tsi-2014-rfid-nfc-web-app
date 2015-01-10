@@ -1,6 +1,6 @@
 <div data-ng-include="'partials/moderator/header.html'"></div>
 
-<legend class="row col-lg-10 col-md-offset-1">User scan rules</legend>
+<legend class="row col-lg-10 col-md-offset-1">Access requests</legend>
 
 <div class="container">
     <table class="table table-striped row col-lg-10">
@@ -15,11 +15,6 @@
                 <input type="text"
                        class="form-control"
                        data-ng-model="search_keyword.scannerUid">
-            </th>
-            <th>
-                <input type="text"
-                       class="form-control"
-                       data-ng-model="search_keyword.responseCommand">
             </th>
             <th>
                 <input type="text"
@@ -50,7 +45,6 @@
         <tr>
             <th>User</th>
             <th>Scanner UID</th>
-            <th>Response command</th>
             <th>Week day</th>
             <th>Valid from</th>
             <th>Valid to</th>
@@ -60,21 +54,23 @@
         </tr>
         </thead>
         <tbody>
-        <tr data-ng-repeat="userScanRule in userScanRules | filter:search_keyword">
-            <td>{{ userScanRule.username }}</td>
-            <td>{{ userScanRule.scannerUid }}</td>
-            <td>{{ userScanRule.responseCommand }}</td>
-            <td>{{ userScanRule.weekDay }}</td>
-            <td>{{ userScanRule.validFrom | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ userScanRule.validTo | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ userScanRule.timeStart | date: 'HH:mm' }}</td>
-            <td>{{ userScanRule.timeEnd | date: 'HH:mm' }}</td>
+        <tr data-ng-repeat="accessRequest in accessRequests | filter:search_keyword">
+            <td>{{ accessRequest.username }}</td>
+            <td>{{ accessRequest.scannerUid }}</td>
+            <td>{{ accessRequest.weekDay }}</td>
+            <td>{{ accessRequest.validFrom | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ accessRequest.validTo | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ accessRequest.timeStart | date: 'HH:mm' }}</td>
+            <td>{{ accessRequest.timeEnd | date: 'HH:mm' }}</td>
             <td>
-                <a class="btn"
-                   href="#/moderator/userScanRules/remove/{{userScanRule.id}}">
-                    <span class="glyphicon glyphicon-pencil"></span>
-                    &nbsp;&nbsp;Delete
+                <a class="btn btn-primary"
+                   href="#/accessRequests/edit/{{accessRequest.accessRequestId}}">
+                    Edit
                 </a>
+                <button class="btn"
+                        data-ng-click="disapprove(accessRequest)">
+                    Disapprove
+                </button>
             </td>
         </tr>
         </tbody>

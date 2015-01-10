@@ -110,7 +110,9 @@ var ROUTE = {
     modelsCreate: '/models/create',
     modelProcedures: '/modes/procedures',
     accessRequests: '/accessRequests',
+    accessRequestsId: '/accessRequests/:id',
     accessRequestsCreate: '/accessRequests/create',
+    approveAccessRequest: '/approveAccessRequest',
     accessRights: '/accessRights'
 };
 
@@ -527,6 +529,89 @@ app.get(ROUTE.accessRequests, function (req, res) {
                 }
             );
         })
+    } else if (securityService.isRole(token, ROLE.moderator)) {
+        dbConnectionPool.query('SELECT users.id AS userId, ' +
+            'users.username AS username, ' +
+            'scanners.id AS scannerId, ' +
+            'scanners.uid AS scannerUid, ' +
+            'access_requests.id AS accessRequestId, ' +
+            'access_requests.week_day AS weekDay, ' +
+            'access_requests.time_start AS timeStart, ' +
+            'access_requests.time_end AS timeEnd, ' +
+            'access_requests.valid_from AS validFrom, ' +
+            'access_requests.valid_to AS validTo ' +
+            'FROM users, scanners, access_requests ' +
+            'WHERE scanners.id = access_requests.scanner AND ' +
+            'users.id = access_requests.user',
+            function (err, results) {
+                if (err) {
+                    res.status(400);
+                    res.send({message: err});
+                    return;
+                }
+
+                res.send(results);
+            }
+        );
+    }
+});
+
+app.get(ROUTE.accessRequestsId, function (req, res) {
+    var accessRequestId = req.params.id;
+    var token = req.query.token;
+    if (securityService.isRole(token, ROLE.moderator)) {
+        dbConnectionPool.query('SELECT users.id AS userId, ' +
+            'users.username AS username, ' +
+            'scanners.id AS scannerId, ' +
+            'scanners.uid AS scannerUid, ' +
+            'access_requests.id AS accessRequestId, ' +
+            'access_requests.week_day AS weekDay, ' +
+            'access_requests.time_start AS timeStart, ' +
+            'access_requests.time_end AS timeEnd, ' +
+            'access_requests.valid_from AS validFrom, ' +
+            'access_requests.valid_to AS validTo ' +
+            'FROM users, scanners, access_requests ' +
+            'WHERE scanners.id = access_requests.scanner AND ' +
+            'users.id = access_requests.user AND ' +
+            'access_requests.id = ?',
+            [accessRequestId],
+            function (err, results) {
+                if (err) {
+                    res.status(400);
+                    res.send({message: err});
+                    return;
+                }
+
+                res.send(results);
+            }
+        );
+    }
+});
+
+/**
+ * Requires token.
+ * Input:
+ * {
+ *   "accessRequestId": Number,
+ *   "responseScannerCommandId": Number
+ * }
+ */
+app.post(ROUTE.approveAccessRequest, function (req, res) {
+    var accessRequestApprove = req.body;
+    var token = req.query.token;
+    if (securityService.isRole(token, ROLE.moderator)) {
+        dbConnectionPool.query('CALL approveAccessRequest(?,?)',
+            [accessRequestApprove.accessRequestId,
+                accessRequestApprove.responseScannerCommandId],
+            function (err, results) {
+                if (err) {
+                    res.status(400);
+                    res.send({message: err});
+                    return;
+                }
+
+                res.send({message: 'Procedure successfully executed.'});
+            });
     }
 });
 

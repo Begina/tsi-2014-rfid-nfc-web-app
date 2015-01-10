@@ -419,6 +419,7 @@ function jsDateToOdbcTime(date) {
  * @param delimiter
  */
 function jsDateFormat(date, delimiter) {
+    date = new Date(date);
     var dayOfMonth = date.getDate() + 1;
     var month = date.getMonth() + 1;
     var year = date.getFullYear();
@@ -675,6 +676,110 @@ nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
                 }).fail(function (response) {
                     console.log(JSON.stringify(response));
                 });
+        };
+    }
+]);
+
+nfcRfidApp.controller('ModeratorAccessRequestsController', ['$scope',
+    'DatabaseQueryService', 'SecurityService',
+    function ($scope, databaseQueryService, securityService) {
+
+        $scope.scannerCommands = [];
+        $scope.accessRequests = [];
+
+        /**
+         * {
+         *   id: Number,
+         *   username: String,
+         *   scannerUid: String,
+         *   responseCommand: String,
+         *   weekDay: Number (0 - 6, Monday - Sunday),
+         *   timeStart: Time (HH:MM:SS),
+         *   timeEnd: Time (HH:MM:SS),
+         *   validFrom: Date (YYYY-MM-DD),
+         *   validTo: Date (YYYY-MM-DD)
+         * }
+         */
+        var accessRequestsGet = securityService.request('/accessRequests');
+
+        if (accessRequestsGet) {
+            accessRequestsGet.done(function (accessRequests) {
+                $scope.accessRequests = accessRequests;
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+
+        $scope.disapprove = function (accessRequest) {
+            // TODO
+        };
+    }
+]);
+
+nfcRfidApp.controller('ModeratorAccessRequestsEditController', ['$scope',
+    'DatabaseQueryService', 'SecurityService', '$routeParams', '$location',
+    function ($scope, databaseQueryService, securityService, $routeParams,
+              $location) {
+
+        var accessRequestId = $routeParams.id;
+        console.log('Access request id: ' + accessRequestId);
+
+        $scope.userScanRule = {
+            userId: 0,
+            scannerId: 0,
+            responseScannerCommandId: 0,
+            weekDay: 0,
+            timeStart: new Date(),
+            timeEnd: new Date(),
+            validFrom: new Date(),
+            validTo: new Date()
+        };
+        $scope.scannerCommands = [];
+
+        $scope.notification = new Notification();
+
+        var requestUrl = '/accessRequests/' + accessRequestId;
+        console.log('Request URL: ' + requestUrl);
+        var accessRequestsGet = securityService.request(requestUrl, {
+            type: 'get',
+            dataType: 'json'
+        });
+
+        if (accessRequestsGet) {
+            accessRequestsGet.done(function (userScanRules) {
+                $scope.userScanRule = userScanRules[0];
+                console.log(JSON.stringify($scope.userScanRule));
+                securityService.request('/scannerCommands/' + $scope.userScanRule.scannerId, {
+                    type: 'get',
+                    dataType: 'json'
+                }).done(function (scannerCommands) {
+                    $scope.scannerCommands = scannerCommands;
+                    $scope.userScanRule.responseScannerCommandId = scannerCommands[0].id;
+                    $scope.$apply();
+                }).fail(function (error) {
+                    console.log(JSON.stringify(error));
+                });
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            });
+        }
+
+        $scope.add = function () {
+            securityService.request('/approveAccessRequest', {
+                type:'post',
+                data:{
+                    accessRequestId: accessRequestId,
+                    responseScannerCommandId: $scope.userScanRule.responseScannerCommandId
+                },
+                dataType: 'json'
+            }).done(function (response) {
+                $location.path('/moderator/accessRequests');
+                $scope.$apply();
+            }).fail(function (error) {
+                console.log(JSON.stringify(error));
+            })
         };
     }
 ]);

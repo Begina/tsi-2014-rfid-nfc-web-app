@@ -515,3 +515,35 @@ CREATE PROCEDURE createAccessRequest(
   END
 
 $$
+
+
+CREATE PROCEDURE approveAccessRequest(
+  access_request_id           BIGINT,
+  response_scanner_command_id BIGINT
+)
+  BEGIN
+    INSERT INTO user_scanner_rules (user,
+                                    scanner,
+                                    response_scanner_command,
+                                    week_day,
+                                    time_start,
+                                    time_end,
+                                    valid_from,
+                                    valid_to)
+      SELECT
+        access_requests.user,
+        access_requests.scanner,
+        response_scanner_command_id,
+        access_requests.week_day,
+        access_requests.time_start,
+        access_requests.time_end,
+        access_requests.valid_from,
+        access_requests.valid_to
+      FROM access_requests
+      WHERE access_requests.id = access_request_id;
+
+    DELETE FROM access_requests
+    WHERE access_requests.id = access_request_id;
+  END
+
+$$
