@@ -853,3 +853,225 @@ app.use(express.static(__dirname + '/../client'));
  ******************************************************************************/
 
 app.listen(argv.webServerPort);
+
+
+/*******************************************************************************
+ * Mqtt client
+ ******************************************************************************/
+
+var mqtt = require('mqtt');
+
+client = mqtt.createClient(1883, 'localhost');
+
+var subscribeTopic = 'iot/nfc/*/tag';
+
+function getScannerIdFromSubscribeTopic(subscribeTopic) {
+    return subscribeTopic.slice(8).slice(0, subscribeTopic.indexOf('/'));
+}
+
+function buildResponseTopic(subscribeTopic) {
+    var scannerIdPlaceholder = ':scannerId';
+    var responseTopicTemplate = 'iot/nfc/' + scannerIdPlaceholder + '/command';
+    var scannerId = getScannerIdFromSubscribeTopic(subscribeTopic);
+    return responseTopicTemplate.replace(scannerIdPlaceholder, scannerId);
+}
+
+client.subscribe(subscribeTopic);
+
+function yyyymmddhhmmssToMysqlTimestamp(yyyymmddhhmmss) {
+    var mysqlTimestamp = ''; // Should be formated like: 2012-12-31 11:30:45
+
+    // YYYY-
+    mysqlTimestamp += yyyymmddhhmmss.slice(0, 4);
+    mysqlTimestamp += '-';
+    // MM-
+    mysqlTimestamp += yyyymmddhhmmss.slice(4, 6);
+    mysqlTimestamp += '-';
+    // DD
+    mysqlTimestamp += yyyymmddhhmmss.slice(6, 8);
+    mysqlTimestamp += ' ';
+
+    // HH:
+    mysqlTimestamp += yyyymmddhhmmss.slice(8, 10);
+    mysqlTimestamp += ':';
+    // MM:
+    mysqlTimestamp += yyyymmddhhmmss.slice(10, 12);
+    mysqlTimestamp += ':';
+    // SS
+    mysqlTimestamp += yyyymmddhhmmss.slice(12, 14);
+
+    return mysqlTimestamp;
+}
+
+function isTagUidPresentInDatabase(tagUid, onPresent, onNotPresent, onError) {
+    dbConnectionPool.query('SELECT id FROM tags WHERE tags.id = ?',
+        [tagUid],
+        function (err, results) {
+            if (err && onError) {
+                onError(err);
+                return;
+            }
+
+            if (results.length > 0 && onPresent) {
+                onPresent();
+            } else if (onNotPresent) {
+                onNotPresent();
+            }
+        }
+    );
+}
+
+function addTagToDatabase(tagUid, onSuccess, onError) {
+    dbConnectionPool.query('INSERT INTO tags(uid) VALUES(?)',
+        [tagUid],
+        function (err, results) {
+            if (onError && err) {
+                onError(err);
+                return;
+            }
+
+            if (onSuccess) onSuccess();
+        });
+}
+
+// Null if no user for tag UID.
+// User id if there is a user for the given tag UID.
+function getUserIdByTagUid(tagUid, onUserId, onError) {
+    dbConnectionPool.query('SELECT users.id AS id ' +
+        'FROM users, tags ' +
+        'WHERE users.id = tags.user AND ' +
+        'tags.uid = ?',
+        [tagUid],
+        function (err, results) {
+            if (onError && err) {
+                onError(err);
+                return;
+            }
+
+            if (onUserId) {
+                if (results.length > 0) {
+                    onUserId(results[0].id);
+                } else {
+                    onUserId(null);
+                }
+            }
+        });
+}
+
+/**
+ * scanTime:
+ * {
+ *   userId: Number,
+ *   scannerId: Number,
+ *   responseCommandId: Number,
+ *   timestamp: String (Timestamp)
+ * }
+ */
+function addScanTimeToDatabase(scanTime, onSuccess, onError) {
+    dbConnectionPool.query('INSERT INTO user_scan_times(user, ' +
+        'scanner, ' +
+        'command, ' +
+        'timestamp) ' +
+        'VALUES (?, ?, ?, ?)',
+        [scanTime.userId, scanTime.scannerId, scanTime.responseCommandId,
+            scanTime.timestamp],
+        function (err, results) {
+            if (onError && err) {
+                onError(err);
+                return;
+            }
+
+            if (onSuccess) onSuccess();
+        });
+}
+
+function hasUserAccessToScanner(userId, scannerId, onHasAccess, onNoAccess,
+                                onError) {
+    dbConnectionPool.query('SELECT week_day, ' +
+        'time_start, ' +
+        'time_end, ' +
+        'valid_from, ' +
+        'valid_to ' +
+        'FROM user_scan_rules ' +
+        'WHERE ' +
+        '(week_day = DAYOFWEEK() AND valid_from <= CURDATE() AND ' +
+        'valid_to >= CURDATE() AND time_start <= CURTIME() AND ' +
+        'time_end >= CURTIME()) AND ' +
+        'user_scan_rules.user = ? AND user_scan_rules.scanner = ?',
+        [userId, scannerId],
+        function (err, results) {
+            if (onError && err) {
+                onError(err);
+                return;
+            }
+
+            if (results > 0 && onHasAccess) {
+                onHasAccess();
+            } else if (onNoAccess) {
+                onNoAccess();
+            }
+        });
+}
+
+client.on('message', function (topic, message) {
+    /*
+     Message format:
+     'YYYYMMDDhhmmss rfid_nfc_uid'
+     */
+    var scanTime = message.slice(0, 14);
+    var tagUid = message.slice(15);
+    var scannerId = getScannerIdFromSubscribeTopic(topic);
+
+    var scanTimeMysqlTimestamp = yyyymmddhhmmssToMysqlTimestamp(scanTime);
+
+    var onError = function (err) {
+        console.log(err);
+    };
+
+    var onTagNotPresentInDatabase = function () {
+        addTagToDatabase(tagUid, null, onError);
+    };
+
+    var onTagPresentInDatabase = function () {
+        var onUserId = function (userId) {
+            if (!userId) {
+                return;
+            }
+
+            var responseTopic = buildResponseTopic(topic);
+
+            var onHasAccess = function () {
+                client.publish(responseTopic, 'PERMIT');
+                addScanTimeToDatabase({
+                    userId: userId,
+                    scannerId: scannerId,
+                    responseCommand: 'PERMIT',
+                    timestamp: scanTimeMysqlTimestamp
+                }, null, onError);
+            };
+
+            var onNoAccess = function () {
+                client.publish(responseTopic, 'DENY');
+                addScanTimeToDatabase({
+                    userId: userId,
+                    scannerId: scannerId,
+                    responseCommand: 'DENY',
+                    timestamp: scanTimeMysqlTimestamp
+                }, null, onError);
+            };
+
+            hasUserAccessToScanner(userId, scannerId, onHasAccess, onNoAccess,
+                onError);
+        };
+
+        getUserIdByTagUid(tagUid, onUserId, onError);
+    };
+
+    isTagUidPresentInDatabase(tagUid, onTagPresentInDatabase,
+        onTagNotPresentInDatabase, onError);
+});
+
+process.on('SIGTERM', function () {
+    client.end();
+    process.exit(0);
+});
