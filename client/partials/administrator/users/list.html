@@ -9,46 +9,39 @@
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.user_username">
+                       data-ng-model="searchKeyword.username">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.user_password">
+                       data-ng-model="searchKeyword.password">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.tag_uid">
-            </th>
-            <th>
-                <input type="text"
-                       class="form-control"
-                       data-ng-model="search_keyword.role_description">
+                       data-ng-model="searchKeyword.role">
             </th>
             <th></th>
         </tr>
         <tr>
             <th>Username</th>
             <th>Password</th>
-            <th>Tag</th>
             <th>Role</th>
             <th>Actions</th>
         </tr>
         </thead>
         <tbody>
-        <tr data-ng-repeat="user in users | filter:search_keyword">
-            <td>{{ user.user_username }}</td>
-            <td>{{ user.user_password }}</td>
-            <td>{{ user.tag_uid }}</td>
-            <td>{{ user.role_description }}</td>
+        <tr data-ng-repeat="user in users | filter:searchKeyword">
+            <td>{{ user.username }}</td>
+            <td>{{ user.password }}</td>
+            <td>{{ user.role }}</td>
             <td>
                 <a class="btn"
-                   href="#/administrator/users/edit/{{user.user_id}}">
+                   href="#/administrator/users/edit/{{user.id}}">
                     <span class="glyphicon glyphicon-pencil"></span>
                     &nbsp;&nbsp;Edit
                 </a>
-                <a class="btn" href="#/administrator/users/remove/{{user.user_id}}">
+                <a class="btn" href="#/administrator/users/remove/{{user.id}}">
                     <span class="glyphicon glyphicon-pencil"></span>
                     &nbsp;&nbsp;Delete
                 </a>

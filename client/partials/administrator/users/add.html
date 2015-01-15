@@ -22,26 +22,17 @@
     </div>
 
     <div class="form-group row col-lg-6 col-md-offset-3">
-        <label for="user-tag">Tag</label>
-        <select id="user-tag"
-                class="form-control"
-                data-ng-model="user.tag"
-                data-ng-options="tag.id as tag.uid for tag in tags">
-            <option value=""></option>
-        </select>
-    </div>
-
-    <div class="form-group row col-lg-6 col-md-offset-3">
         <label for="user-role">Role</label>
         <select id="user-role"
                 class="form-control"
-                ng-model="user.role"
-                ng-options="role.id as role.description for role in roles">
+                data-ng-model="user.role"
+                data-ng-options="role.id as role.description for
+                                 role in roles">
         </select>
     </div>
 
     <div class="btn btn-default row col-lg-2 col-md-offset-5"
-         data-ng-click="add()">
-        <i class="glyphicon glyphicon-plus"></i> Add User
+         data-ng-click="post()">
+        <i class="glyphicon glyphicon-plus"></i> Add
     </div>
 </form>

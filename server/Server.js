@@ -68,8 +68,7 @@ var express = require('express');
 var app = express();
 
 var ROUTE = {
-    login: '/login',
-    logout: '/logout',
+    accesses: '/accesses',
     scanners: '/scanners',
     users: '/users',
     roles: '/roles',
@@ -88,6 +87,16 @@ app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing
                                                   // application/x-www-form-urlencoded
 
+/*******************************************************************************
+ * Serving static files
+ ******************************************************************************/
+
+app.use(express.static(__dirname + '/../client'));
+
+/*******************************************************************************
+ * Authentication
+ ******************************************************************************/
+
 // User authentication
 
 var ROLE = {
@@ -97,32 +106,33 @@ var ROLE = {
 };
 
 // TODO: Resource access restrictions by user role.
-
-/*******************************************************************************
- * Authentication
- ******************************************************************************/
-
 app.use(function (req, res, next) {
 
-    function unauthorized(res) {
-        res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
-        return res.sendStatus(401);
+    function sendUnauthorized(res, error) {
+        //res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
+        res.status(401);
+        res.send(error);
     }
 
-    var user = basicAuth(req);
+    var credentials = basicAuth(req);
 
-    if (!user || !user.name || !user.pass) {
-        return unauthorized(res);
+    var error = getCredentialsError(credentials);
+
+    if (error) {
+        sendUnauthorized(res, error);
+        return;
     }
 
     dbConnectionPool.query('SELECT id AS id, ' +
         'username AS username, ' +
         'password AS password, ' +
-        'role AS roleId ' +
+        'role AS roleId, ' +
+        'logged_in AS loggedIn ' +
         'FROM users ' +
         'WHERE username = ? AND password = ?',
-        [user.name, user.pass],
+        [credentials.name, credentials.pass],
         function (err, results) {
+
             if (err) {
                 res.status(500);
                 res.send(err);
@@ -132,9 +142,10 @@ app.use(function (req, res, next) {
             if (results.length > 0) {
                 req.user = results[0];
                 return next();
-            } else {
-                return unauthorized(res);
             }
+
+            sendUnauthorized(res, 'Username or password invalid.');
+
         }
     );
 
@@ -247,7 +258,7 @@ function compareDates(date1, date2) {
 
 function getIdParameterError(id) {
 
-    if (!id || !(typeof id === 'number')) {
+    if (!id || typeof id != 'number') {
         return 'Id invalid.';
     }
 
@@ -265,20 +276,20 @@ function getScannerError(scanner) {
         return 'Scanner invalid.';
     }
 
-    if (!scanner.hasOwnProperty('uid')) {
+    if (!scanner.hasOwnProperty('uid') || typeof scanner.uid != 'string') {
         return 'UID invalid.';
     }
 
-    if (!scanner.hasOwnProperty('description')) {
+    if (!scanner.hasOwnProperty('description') ||
+        typeof scanner.description != 'string') {
         return 'Description invalid.';
     }
 
-    if (!(typeof scanner.uid === 'string') || !scanner.uid.length >= 1) {
+    if (scanner.uid.length < 1) {
         return 'UID too short. (1 character min.)';
     }
 
-    if (!(typeof scanner.description === 'string') ||
-        !scanner.description.length >= 5) {
+    if (scanner.description.length < 5) {
         return 'Description too short. (5 characters min.)';
     }
 
@@ -292,6 +303,138 @@ function sendInputParametersErrorResponse(res, error) {
     res.send(error);
 
 }
+
+/*******************************************************************************
+ * Login/Logout
+ ******************************************************************************/
+
+function getCredentialsError(credentials) {
+
+    if (!credentials) {
+        return 'Credentials invalid.';
+    }
+
+    if (!credentials.hasOwnProperty('name') ||
+        typeof credentials.name != 'string') {
+        return 'Username invalid.';
+    }
+
+    if (!credentials.hasOwnProperty('pass') ||
+        typeof credentials.pass != 'string') {
+        return 'Password invalid.';
+    }
+
+    if (credentials.name.length < 5) {
+        return 'Username too short. (5 character min.)';
+    }
+
+    if (credentials.pass.length < 6) {
+        return 'Password too short. (6 characters min.)';
+    }
+
+    return null;
+
+}
+
+/**
+ * loginLogout:
+ * 1 - login
+ * 0 - logout
+ * onDone(result).
+ */
+function authorize(username, password, loginLogout, res, onDone) {
+    dbConnectionPool.query('UPDATE users SET logged_in = ? ' +
+        'WHERE username = ? AND password = ?',
+        [loginLogout, username, password],
+        function (err, result) {
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (onDone) onDone(result);
+        }
+    );
+}
+
+/**
+ * POST /accesses
+ *
+ * Input: Basic Authentication header is needed to get to this resource.
+ *
+ * Output: Number (role).
+ *         403 error if unauthorized to login.
+ *         'Error.' (On error.)
+ */
+app.post(ROUTE.accesses, function (req, res) {
+
+    var user = req.user;
+
+    var onDone = function (result) {
+        res.send('' + user.roleId);
+    };
+
+    authorize(user.username, user.password, 1, res, onDone);
+
+});
+
+/**
+ * DELETE /accesses
+ *
+ * Input: Basic Authentication header is needed to get to this resource.
+ *
+ * Output: 'Logged out successfully.' (On success.)
+ *         'Error.' (On error.)
+ */
+app.delete(ROUTE.accesses, function (req, res) {
+
+    var user = req.user;
+
+    var onDone = function (result) {
+        res.send('Logged out successfully.');
+    };
+
+    authorize(user.username, user.password, 0, res);
+
+});
+
+/**
+ * GET /accesses
+ *
+ * Input: Basic Authentication header is needed to get to this resource.
+ *
+ * Output: Number (role).
+ *         403 error if unauthorized to login.
+ *         'Error.' (On error.)
+ */
+app.get(ROUTE.accesses, function (req, res) {
+
+    // If not logged in, the authentication code will return 401.
+
+    var user = req.user;
+
+    dbConnectionPool.query('SELECT role FROM users ' +
+        'WHERE username = ? AND password = ? AND logged_in = 1',
+        [user.username, user.password],
+        function (err, results) {
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (results.length > 0) {
+                res.send (results[0].role);
+                return;
+            }
+
+            res.status(401);
+            res.send('Unauthorized.');
+        }
+    );
+
+});
 
 /*******************************************************************************
  * Scanners
@@ -524,29 +667,27 @@ function getUserError(user) {
         return 'User invalid.';
     }
 
-    if (!user.hasOwnProperty('username')) {
+    if (!user.hasOwnProperty('username') || typeof user.username != 'string') {
         return 'Username invalid.';
     }
 
-    if (!user.hasOwnProperty('password')) {
+    if (!user.hasOwnProperty('password') || typeof user.password != 'string') {
         return 'Password invalid.';
     }
 
-    if (!user.hasOwnProperty('role')) {
+    if (!user.hasOwnProperty('role') || typeof user.role != 'number') {
         return 'Role invalid';
     }
 
-    if (!(typeof user.username === 'string') ||
-        !user.username.length >= 5) {
+    if (user.username.length < 5) {
         return 'Username invalid. (5 characters min.)';
     }
 
-    if (!(typeof user.password === 'string') ||
-        !user.password.length >= 6) {
+    if (user.password.length < 6) {
         return 'Password invalid. (6 characters min.)';
     }
 
-    if (!(typeof user.role === 'number') || !(user.role >= 1 && user.role <= 3)) {
+    if (user.role < 1 || user.role > 3) {
         return 'Role invalid. (Number 1 to 3.)';
     }
 
@@ -599,24 +740,38 @@ app.post(ROUTE.users, function (req, res) {
 /**
  * GET /users
  *
+ * Query string:
+ *   ?expand=role // Returns the role name, not the role id.
+ *
  * Input: None
  *
  * Output: [{
  *   id: Number,
  *   username: String,
  *   password: String,
- *   role: String
+ *   role: Number
  * }]
  */
 app.get(ROUTE.users, function (req, res) {
 
-    dbConnectionPool.query('SELECT id AS id, ' +
+    var expand = req.query.expand;
+
+    var select = 'SELECT id AS id, ' +
         'username AS username, ' +
         'password AS password, ' +
         'role AS role ' +
-        'FROM users',
-        [],
-        function (err, results) {
+        'FROM users';
+
+    if (expand.indexOf('role') >= 0) {
+        select = 'SELECT users.id AS id, ' +
+        'users.username AS username, ' +
+        'users.password AS password, ' +
+        'roles.description AS role ' +
+        'FROM users ' +
+        'LEFT OUTER JOIN roles ON users.role = roles.id';
+    }
+
+    dbConnectionPool.query(select, [], function (err, results) {
             if (err) {
                 res.status(500);
                 res.send(err);
@@ -654,14 +809,30 @@ app.get(ROUTE.users + '/:id', function (req, res) {
         return;
     }
 
-    dbConnectionPool.query('SELECT id AS id, ' +
+    var expand = req.query.expand;
+
+    var select = 'SELECT id AS id, ' +
         'username AS username, ' +
         'password AS password, ' +
         'role AS role ' +
         'FROM users ' +
-        'WHERE id = ?',
-        [userId],
-        function (err, results) {
+        'WHERE id = ?';
+
+    var parameters = [userId];
+
+    if (expand && expand.indexOf('role') >= 0) {
+        select = 'SELECT users.id AS id, ' +
+        'users.username AS username, ' +
+        'users.password AS password, ' +
+        'roles.description AS role ' +
+        'FROM users ' +
+        'LEFT OUTER JOIN roles ON users.role = roles.id ' +
+        'WHERE users.id = ?';
+
+        parameters = [userId];
+    }
+
+    dbConnectionPool.query(select, parameters, function (err, results) {
             if (err) {
                 res.status(500);
                 res.send(err);
@@ -863,19 +1034,19 @@ function getTagError(tag) {
         return 'Tag invalid.';
     }
 
-    if (!tag.hasOwnProperty('uid')) {
+    if (!tag.hasOwnProperty('uid') || typeof tag.uid != 'string') {
         return 'UID invalid.';
     }
 
-    if (!tag.hasOwnProperty('userId')) {
+    if (!tag.hasOwnProperty('userId') || typeof tag.userId != 'number') {
         return 'User id invalid.';
     }
 
-    if (!(typeof tag.uid === 'string') || tag.uid.length < 1) {
+    if (tag.uid.length < 1) {
         return 'UID invalid. (1 characters min.)';
     }
 
-    if (!(typeof tag.userId === 'number') || tag.userId < 0) {
+    if (tag.userId < 0) {
         return 'User id invalid. (Number greater than or equal to 0.)';
     }
 
@@ -1112,64 +1283,52 @@ function getUserScanRuleError(userScanRule) {
         return 'User scan rule invalid.';
     }
 
-    if (!userScanRule.hasOwnProperty('userId')) {
+    if (!userScanRule.hasOwnProperty('userId') ||
+        typeof userScanRule.userId != 'number') {
         return 'User id invalid.';
     }
 
-    if (!userScanRule.hasOwnProperty('scannerId')) {
+    if (!userScanRule.hasOwnProperty('scannerId') ||
+        typeof userScanRule.scannerId != 'number') {
         return 'Scanner id invalid.';
     }
 
-    if (!userScanRule.hasOwnProperty('startTime')) {
-        return 'Start time invalid.';
+    if (!userScanRule.hasOwnProperty('startTime') ||
+        !isTime(userScanRule.startTime)) {
+        return 'Start time invalid. (Must be formatted like HH:MM:SS)';
     }
 
-    if (!userScanRule.hasOwnProperty('endTime')) {
-        return 'End time invalid.';
+    if (!userScanRule.hasOwnProperty('endTime') ||
+        !isTime(userScanRule.endTime)) {
+        return 'End time invalid. (Must be formatted like HH:MM:SS)';
     }
 
-    if (!userScanRule.hasOwnProperty('startDate')) {
-        return 'Start date invalid.';
+    if (!userScanRule.hasOwnProperty('startDate') ||
+        !isDate(userScanRule.startDate)) {
+        return 'Start date invalid. ' +
+            '(Start date must be formatted like YYYY-MM-DD.)';
     }
 
-    if (!userScanRule.hasOwnProperty('endDate')) {
-        return 'End date invalid.';
+    if (!userScanRule.hasOwnProperty('endDate') ||
+        !isDate(userScanRule.endDate)) {
+        return 'End date invalid. ' +
+            '(End date must be formatted like YYYY-MM-DD.)';
     }
 
     if (!userScanRule.hasOwnProperty('daysOfWeek')) {
         return 'Days of week invalid.';
     }
 
-    if (!(typeof userScanRule.userId === 'number') ||
-        userScanRule.userId <= 0) {
+    if (userScanRule.userId <= 0) {
         return 'User id invalid. (Number greater than 0.)';
     }
 
-    if (!(typeof userScanRule.scannerId === 'number') ||
-        userScanRule.scannerId <= 0) {
+    if (userScanRule.scannerId <= 0) {
         return 'Scanner id invalid. (Number greater than 0.)';
-    }
-
-    if (!isTime(userScanRule.startTime)) {
-        return 'Start time invalid. (Must be formatted like HH:MM:SS)';
-    }
-
-    if (!isTime(userScanRule.endTime)) {
-        return 'End time invalid. (Must be formatted like HH:MM:SS)';
     }
 
     if (compareTimes(userScanRule.startTime, userScanRule.endTime) != -1) {
         return 'Times invalid. (End time must be greater than start time.)';
-    }
-
-    if (!isDate(userScanRule.startDate)) {
-        return 'Start date invalid. ' +
-            '(Start date must be formatted like YYYY-MM-DD.)';
-    }
-
-    if (!isDate(userScanRule.endDate)) {
-        return 'End date invalid. ' +
-            '(End date must be formatted like YYYY-MM-DD.)';
     }
 
     if (compareDates(userScanRule.startDate, userScanRule.endDate) != -1) {
@@ -1209,10 +1368,9 @@ function getUserScanRuleError(userScanRule) {
         userScanRule.daysOfWeek.length > 7 || !areDaysOfWeekValid(userScanRule.daysOfWeek) ||
         areDaysOfWeekRepeating(userScanRule.daysOfWeek)) {
 
-        var error = 'Days of week invalid. ' +
+        return 'Days of week invalid. ' +
             '(1 - 7 representing sunday through monday. ' +
             'Cannot be more than 7 days. Days cannot repeat.)';
-        return error;
     }
 
     return null;
@@ -1293,16 +1451,115 @@ function insertIntoUserScanRules(userScanRule, res, isRequest,
 
 }
 
+/**
+ * expand must not be falsy. If no expand set expand='';
+ */
+function selectUserScanRules1(userId, userRole, userScanRuleRequestId,
+                             isRequest, res, expand) {
+
+    var selectQueryTemplate = 'SELECT :columns FROM user_scan_rules ' +
+        ':joins WHERE :conditions';
+
+    var columns = 'user_scan_rules.id AS id' +
+        ',user_scan_rules.start_time AS startTime' +
+        ',user_scan_rules.end_time AS endTime' +
+        ',user_scan_rules.start_date AS startDate' +
+        ',user_scan_rules.end_date AS endDate';
+
+    var joins = '';
+
+    var conditions = ' is_request = ?';
+
+    var parameters = [isRequest];
+
+    if (expand.indexOf('user') >= 0) {
+        columns += ',users.username AS username';
+        joins += ' LEFT OUTER JOIN users' +
+                 ' ON users.id = user_scan_rules.user';
+    } else {
+        columns += ',user_scan_rules.user AS userId';
+    }
+
+    if (expand.indexOf('scanner') >= 0) {
+        columns += ',scanners.uid AS scannerUid';
+        joins += ' LEFT OUTER JOIN scanners' +
+                 ' ON scanners.id = user_scan_rules.scanner';
+    } else {
+        columns += ',user_scan_rules.scanner AS scannerId';
+    }
+
+    if (userRole && userRole === ROLE.user) {
+        conditions += ' AND user_scan_rules.user = ?';
+        parameters.push(userId);
+    }
+
+    if (userScanRuleRequestId) {
+        conditions += ' AND user_scan_rules.id = ?';
+        parameters.push(userScanRuleRequestId);
+    }
+
+    var select = selectQueryTemplate.replace(':columns', columns);
+    select = select.replace(':joins', joins);
+    select = select.replace(':conditions', conditions);
+
+    dbConnectionPool.query(select, parameters, function (err, userScanRules) {
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (userScanRules.length <= 0) {
+                res.send(userScanRules);
+                return;
+            }
+
+            var loaded = 0, userScanRulesCount = userScanRules.length;
+
+            userScanRules.forEach(function (userScanRule) {
+                dbConnectionPool.query('SELECT day_of_week AS day ' +
+                    'FROM user_scan_rule_days ' +
+                    'WHERE user_scan_rule = ?',
+                    [userScanRule.id],
+                    function (err, userScanRuleDays) {
+                        if (err) {
+                            res.status(500);
+                            res.send(err);
+                            return;
+                        }
+
+                        var daysOfWeek = [];
+                        userScanRuleDays.forEach(function (userCanRuleDay) {
+                            daysOfWeek.push(userCanRuleDay.day);
+                        });
+                        userScanRule.daysOfWeek = daysOfWeek;
+
+                        loaded++;
+                        if (loaded === userScanRulesCount) {
+                            if (userScanRulesCount === 1) {
+                                res.send(userScanRules[0]);
+                            } else {
+                                res.send(userScanRules);
+                            }
+                        }
+                    }
+                );
+            });
+        }
+    );
+}
+
+
 function selectUserScanRules(userId, userRole, userScanRuleRequestId,
                              isRequest, res) {
 
-    var selectQuery = 'SELECT id AS id, ' +
-        'user AS userId, ' +
-        'scanner AS scannerId, ' +
-        'start_time AS startTime, ' +
-        'end_time AS endTime, ' +
-        'start_date AS startDate, ' +
-        'end_date AS endDate ' +
+    var selectQuery = 'SELECT user_scan_rules.id AS id, ' +
+        'user_scan_rules.user AS userId, ' +
+        'user_scan_rules.scanner AS scannerId, ' +
+        'user_scan_rules.start_time AS startTime, ' +
+        'user_scan_rules.end_time AS endTime, ' +
+        'user_scan_rules.start_date AS startDate, ' +
+        'user_scan_rules.end_date AS endDate' +
         'FROM user_scan_rules ' +
         'WHERE is_request = ?';
 
@@ -1431,7 +1688,16 @@ app.post(ROUTE.userScanRules, function (req, res) {
  */
 app.get(ROUTE.userScanRules, function (req, res) {
 
-    selectUserScanRules(null, null, null, 0, res);
+    var expand = req.query.expand;
+
+    console.log('Expand: ');
+    console.log(expand);
+
+    if (!expand) {
+        expand = '';
+    }
+
+    selectUserScanRules1(null, null, null, 0, res, expand);
 
 });
 
@@ -1464,7 +1730,9 @@ app.get(ROUTE.userScanRules + '/:id', function (req, res) {
         return;
     }
 
-    selectUserScanRules(null, null, userScanRuleId, 0, res);
+    var expand = req.query.expand;
+
+    selectUserScanRules1(null, null, userScanRuleId, 0, res, expand);
 
 });
 
@@ -1501,15 +1769,13 @@ function getUserScanRuleRequestError(userScanRuleRequest) {
 
     if (error) return error;
 
-    if (!userScanRuleRequest.hasOwnProperty('isRequest')) {
+    if (!userScanRuleRequest.hasOwnProperty('isRequest') ||
+        typeof userScanRuleRequest.isRequest != 'boolean') {
         return 'Is request invalid.';
     }
 
-    if (!(typeof userScanRuleRequest.isRequest === 'boolean')) {
-        return 'Is request invalid';
-    }
-
     return null;
+
 }
 
 /**
@@ -1703,12 +1969,6 @@ app.delete(ROUTE.userScanRuleRequests + '/:id', function (req, res) {
     deleteUserScanRule(userScanRuleRequestId, res);
 
 });
-
-/*******************************************************************************
- * Serving static files
- ******************************************************************************/
-
-app.use(express.static(__dirname + '/../client'));
 
 /*******************************************************************************
  * Application start

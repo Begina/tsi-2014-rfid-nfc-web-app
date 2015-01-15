@@ -16,7 +16,6 @@
         </tr>
         <tr>
             <th>UID</th>
-            <th>Commands</th>
             <th>Description</th>
             <th>Actions</th>
         </tr>
@@ -24,7 +23,6 @@
         <tbody>
         <tr data-ng-repeat="scanner in scanners | filter:search_keyword">
             <td>{{ scanner.uid }}</td>
-            <td>{{ scanner.commands }}</td>
             <td>{{ scanner.description }}</td>
             <td>
                 <a class="btn"

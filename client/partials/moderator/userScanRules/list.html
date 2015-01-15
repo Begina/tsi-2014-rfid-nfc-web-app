@@ -9,66 +9,72 @@
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.username">
+                       data-ng-model="searchKeyword.username">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.scannerUid">
+                       data-ng-model="searchKeyword.scannerUid">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.responseCommand">
+                       data-ng-model="searchKeyword.daysOfWeek">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.weekDay">
+                       data-ng-model="searchKeyword.startDate">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.validFrom">
+                       data-ng-model="searchKeyword.endDate">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.validTo">
+                       data-ng-model="searchKeyword.startTime">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.timeStart">
-            </th>
-            <th>
-                <input type="text"
-                       class="form-control"
-                       data-ng-model="search_keyword.timeEnd">
+                       data-ng-model="searchKeyword.endTime">
             </th>
         </tr>
         <tr>
             <th>User</th>
             <th>Scanner UID</th>
-            <th>Response command</th>
-            <th>Week day</th>
-            <th>Valid from</th>
-            <th>Valid to</th>
-            <th>Time start</th>
-            <th>Time end</th>
+            <th>Days of week</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Start time</th>
+            <th>End time</th>
             <th>Actions</th>
         </tr>
         </thead>
         <tbody>
-        <tr data-ng-repeat="userScanRule in userScanRules | filter:search_keyword">
+        <tr data-ng-repeat="userScanRule in userScanRules | filter:searchKeyword">
             <td>{{ userScanRule.username }}</td>
             <td>{{ userScanRule.scannerUid }}</td>
-            <td>{{ userScanRule.responseCommand }}</td>
-            <td>{{ userScanRule.weekDay }}</td>
-            <td>{{ userScanRule.validFrom | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ userScanRule.validTo | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ userScanRule.timeStart | date: 'HH:mm' }}</td>
-            <td>{{ userScanRule.timeEnd | date: 'HH:mm' }}</td>
+            <td>
+                <span data-ng-repeat="dayOfWeek in userScanRule.daysOfWeek">
+                    {{days[dayOfWeek]}}
+                </span>
+                <!--<label data-ng-repeat="day in days">-->
+                    <!--<input-->
+                            <!--type="checkbox"-->
+                            <!--name="selectedDays[]"-->
+                            <!--value="{{day}}"-->
+                            <!--data-ng-checked="days.indexOf(day) < 0"-->
+                            <!--data-ng-click="toggleDay(day)">-->
+                    <!--{{day}}-->
+                <!--</label>-->
+            </td>
+            <td>{{ userScanRule.startDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.endDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.startTime | date: 'HH:mm' }}</td>
+            <td>{{ userScanRule.endTime | date: 'HH:mm' }}</td>
             <td>
                 <a class="btn"
                    href="#/moderator/userScanRules/remove/{{userScanRule.id}}">

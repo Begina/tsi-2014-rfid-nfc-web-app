@@ -91,6 +91,7 @@ var Notification = function () {
     var me = this;
 
     this.message = '';
+
     this.hasOccurred = function () {
         return me.message.length > 0;
     }
@@ -113,61 +114,207 @@ var Urls = function (create, getAll, getById, update, remove) {
     this.remove = remove;
 };
 
+var CookieManager = {
+    /**
+     * Cookie format: JSON.
+     * Overwrites key if it is already saved.
+     */
+    save: function (key, value) {
+
+        if (!document.cookie || document.cookie.trim().length === 0) {
+            document.cookie = JSON.stringify({});
+        }
+
+        var cookie = JSON.parse(document.cookie);
+
+        cookie[key] = value;
+
+        document.cookie = JSON.stringify(cookie);
+
+    },
+
+    /**
+     * Returns cookie value if key exists.
+     * If key doesn't exist, returns a falsy object.
+     */
+    load: function (key) {
+
+        if (!document.cookie || document.cookie.trim().length === 0) {
+            return null;
+        }
+
+        var cookie = JSON.parse(document.cookie);
+
+        return cookie[key];
+
+    },
+
+    /**
+     * Deletes a key, value pair from the cookie if it exists.
+     */
+    remove: function (key) {
+
+        if (!document.cookie || document.cookie.trim().length === 0) {
+            return;
+        }
+
+        var cookie = JSON.parse(document.cookie);
+
+        delete cookie[key];
+
+        document.cookie = JSON.stringify(cookie);
+
+    },
+
+    exists: function (key) {
+
+        if (!document.cookie || document.cookie.trim().length === 0) {
+            return false;
+        }
+
+        var cookie = JSON.parse(document.cookie);
+
+        return cookie.hasOwnProperty(key);
+    }
+
+};
+
 var SecurityService = function (onNotLoggedIn) {
-    var userSession = null;
+
+    var me = this;
+
+    var websiteAccessResource = '/accesses';
+
+    var user = null; // null if logged out.
+    // Structure
+    // {
+    //   role: 0, // 0 if logged out.
+    //   username: null, // Falsy if logged out.
+    //   password: null // Falsy if logged out.
+    // }
 
     this.setOnNotLoggedIn = function (onNotLoggedInNew) {
         onNotLoggedIn = onNotLoggedInNew;
     };
 
-    this.login = function (credentials) {
-        return $.ajax(serverUrl + "/login", {
-            type: 'POST',
-            data: credentials,
-            dataType: 'JSON',
-            crossDomain: true,
-            success: function (response) {
-                userSession = response;
-            }
-        });
-    };
+    var buildAuthorizationHeader = function(username, password) {
 
-    this.logout = function () {
-        return $.ajax(serverUrl + "/logout", {
-            type: 'POST',
-            data: userSession,
-            dataType: 'JSON',
-            crossDomain: true,
-            success: function (response) {
-                userSession = null;
-            }
-        });
+        var base64UsernamePassword = username + ":" + password;
+
+        base64UsernamePassword = btoa(base64UsernamePassword);
+
+        return "Basic " + base64UsernamePassword;
+
     };
 
     /**
-     * Makes an authenticated asynchronous REST request.
-     * @param url
-     * @param ajaxOptions
-     * @returns {Object} jQuery Ajax Promise
+     * credentials {
+     *   username: String,
+     *   password: String
+     * }
+     */
+    this.login = function (credentials) {
+
+        var authorization = buildAuthorizationHeader(credentials.username,
+            credentials.password);
+
+        return $.ajax(websiteAccessResource, {
+            type: 'POST',
+            data: credentials,
+            dataType: 'JSON',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader ("Authorization", authorization);
+            }
+        }).done(function (role) {
+
+            console.log('Logged in. Role: ' + role);
+
+            if (role) {
+                user = {
+                    role: role,
+                    username: credentials.username,
+                    password: credentials.password
+                };
+
+                CookieManager.save('user', user);
+            }
+
+        });
+
+    };
+
+    this.logout = function () {
+
+        var user = CookieManager.load('user');
+
+        var authorization = buildAuthorizationHeader(user.username,
+            user.password);
+
+        return $.ajax(websiteAccessResource, {
+            type: 'POST',
+            dataType: 'JSON',
+            crossDomain: true,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader ("Authorization", authorization);
+            }
+        }).done(function () {
+
+            CookieManager.remove('user');
+
+        });
+
+    };
+
+    this.isLoggedIn = function () {
+
+        return CookieManager.exists('user');
+
+    };
+
+    /**
+     * Returns null if the user is not logged in.
+     */
+    this.getRole = function () {
+
+        if (!me.isLoggedIn()) {
+            return null;
+        }
+
+        return CookieManager.load('user').role;
+
+    };
+
+    /**
+     * Appends a basic auth header to the jQuery Ajax options object.
+     * If not logged in return null. Returns jQuery Ajax promise otherwise.
      */
     this.request = function (url, ajaxOptions) {
-        if (userSession === null) {
+
+        if (!me.isLoggedIn()) {
             if (onNotLoggedIn) onNotLoggedIn();
             return null;
         }
 
-        if (url.indexOf('?') < 0) {
-            url += '?'
+        var user = CookieManager.load('user');
+
+        var authorization = buildAuthorizationHeader(user.username,
+            user.password);
+
+        if (!ajaxOptions.hasOwnProperty('beforeSend')) {
+            ajaxOptions.beforeSend = function (xhr) {
+                xhr.setRequestHeader ("Authorization", authorization);
+            };
         }
-        url += '&token=' + userSession.token;
 
         return $.ajax(url, ajaxOptions);
+
     };
+
 };
 
 var ScannersService = function (securityService) {
     this.add = function (scanner) {
-        return securityService.request(serverUrl + '/scanners/create', {
+        return securityService.request('/scanners/create', {
             type: 'POST',
             data: scanner,
             dataType: 'JSON',

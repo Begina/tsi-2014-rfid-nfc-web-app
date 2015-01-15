@@ -3,7 +3,7 @@ DELIMITER $$
 INSERT INTO users (username, password, role)
 VALUES ('administrator', 'password', 1),
   ('moderator', 'password', 2),
-  ('user', 'password', 3);
+  ('regular', 'password', 3);
 
 $$
 

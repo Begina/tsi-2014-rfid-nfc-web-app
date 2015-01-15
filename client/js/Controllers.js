@@ -3,7 +3,29 @@
  ******************************************************************************/
 
 nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
-    '$location', function ($scope, securityService, $location) {
+    '$location', '$route',
+    function ($scope, securityService, $location, $route) {
+
+        function redirectToDashboard(role) {
+
+            if (role === ROLE.administrator) {
+                $location.path('/administrator/dashboard');
+            } else if (role === ROLE.moderator) {
+                $location.path('/moderator/dashboard');
+            } else if (role === ROLE.basic) {
+                $location.path('/user/dashboard');
+            }
+
+            $route.reload();
+
+        }
+
+        var role = securityService.getRole();
+
+        if (role) {
+            redirectToDashboard(role);
+        }
+
         $scope.credentials = {
             username: '',
             password: ''
@@ -12,25 +34,44 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
         $scope.notification = new Notification();
 
         $scope.login = function () {
-            securityService.login($scope.credentials)
-                .done(function (userSession) {
-                    if (userSession.role === ROLE.administrator) {
-                        $location.path('/administrator/dashboard');
-                        $scope.$apply();
-                    } else if (userSession.role === ROLE.moderator) {
-                        $location.path('/moderator/dashboard');
-                        $scope.$apply();
-                    } else if (userSession.role === ROLE.basic) {
-                        $location.path('/user/dashboard');
-                        $scope.$apply();
-                    }
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+
+            securityService.login($scope.credentials).done(function (role) {
+
+                redirectToDashboard(role);
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
+
+    }
+]);
+
+nfcRfidApp.controller('LogoutController', ['$scope', 'SecurityService',
+    '$location', '$route',
+    function ($scope, securityService, $location, $route) {
+
+        this.logout = function () {
+
+            securityService.logout().done(function () {
+
+                $location.path('/login');
+
+                $route.reload();
+
+            }).fail(function () {
+
+                console.log('Trying something criminal?');
+
+            });
+
+        };
+
     }
 ]);
 
@@ -38,152 +79,193 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
  * Administrator scanners controllers
  ******************************************************************************/
 
+var scannersResource = '/scanners';
+var scannersResourceById = scannersResource + '/:id';
+
 nfcRfidApp.controller('AdministratorScannersAddController', ['$scope',
-    'ScannersService',
-    function ($scope, scannersService) {
-        $scope.scanner = {
-            id: 0,
-            uid: '',
-            description: ''
-        };
+    'SecurityService', '$location', '$route',
+    function ($scope, securityService, $location, $route) {
+
+        $scope.scanner = {};
+        // Structure: {
+        //   uid: '',
+        //   description: ''
+        // }
 
         $scope.notification = new Notification();
 
-        $scope.add = function () {
-            scannersService.add($scope.scanner)
-                .done(function (response) {
-                    $scope.notification.message = response.message;
-                    $scope.scanner = {
-                        id: 0,
-                        uid: '',
-                        description: ''
-                    };
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+        $scope.post = function () {
+
+            securityService.request(scannersResource, {
+                type: 'POST',
+                data: $scope.scanner,
+                dataType: 'text'
+            }).done(function (response) {
+
+                $scope.scanner = {};
+
+                $location.path('/administrator/scanners');
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
     }
 ]);
 
-nfcRfidApp.controller('AdministratorScannersController', ['$scope',
-    'ScannersService',
-    function ($scope, scannersService) {
-        $scope.scanners = [];
+/**
+ * Does a GET for all the scanners.
+ * onDone(scanners) is executed before an $scope.$apply(). No need to do an
+ * apply.
+ */
+function getScanners(securityService, $scope, onDone) {
 
-        var getAllScannersPromise = scannersService.getAll();
-        if (getAllScannersPromise) {
-            getAllScannersPromise
-                .done(function (scanners) {
-                    $scope.scanners = scanners;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load scanners.');
-                });
-        }
+    securityService.request(scannersResource, {
+        type: 'GET',
+        dataType: 'JSON'
+    }).done(function (scanners) {
+
+        $scope.scanners = scanners;
+
+        if (onDone) onDone(scanners);
+
+        $scope.$apply();
+
+    }).fail(function () {
+
+        console.log('Failed to load scanners.');
+
+    });
+
+}
+
+nfcRfidApp.controller('AdministratorScannersController', ['$scope',
+    'SecurityService',
+    function ($scope, securityService) {
+
+        $scope.scanners = [];
+        // Structure: [{
+        //   uid: '',
+        //   description: ''
+        // }]
+
+        getScanners(securityService, $scope);
+
     }
 ]);
 
 nfcRfidApp.controller('AdministratorScannersEditController', ['$scope',
-    'ScannersService', 'ScannerCommandsService', '$routeParams', '$location',
-    function ($scope, scannersService, scannerCommandsService, $routeParams,
-              $location) {
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
+
+        var scannerId = $routeParams.id;
+
+        var resource = scannersResourceById.replace(':id', scannerId);
+
         $scope.scanner = {};
+        // Structure: {
+        //   uid: '',
+        //   description: ''
+        // }
 
         $scope.notification = new Notification();
 
-        $scope.update = function () {
-            scannersService.update($scope.scanner)
-                .done(function (message) {
-                    $location.path('/administrator/scanners');
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+        $scope.put = function () {
+
+            securityService.request(resource, {
+                type: 'PUT',
+                data: $scope.scanner
+            }).done(function () {
+
+                $location.path('/administrator/scanners');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
 
-        var getScannerCommands = function (scannerId) {
-            var getScannerCommandsPromise =
-                scannerCommandsService.getById(scannerId);
-            if (getScannerCommandsPromise) {
-                getScannerCommandsPromise
-                    .done(function (commands) {
-                        var commandsOnly = [];
-                        for (var i = 0; i < commands.length; i++) {
-                            commandsOnly.push(commands[i].command);
-                        }
-                        $scope.scanner.commands = commandsOnly;
-                        $scope.$apply();
-                    })
-                    .fail(function (response) {
-                        var error = response.responseJSON;
-                        $scope.notification.message = error.message;
-                        $scope.$apply();
-                    });
-            }
-        };
+        securityService.request(resource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (scanner) {
 
-        var scannerId = $routeParams.id;
-        var getScannersByIdPromise = scannersService.getById(scannerId);
-        if (getScannersByIdPromise) {
-            getScannersByIdPromise
-                .done(function (scanner) {
-                    $scope.scanner = scanner;
-                    getScannerCommands(scanner.id);
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
-        }
+            $scope.scanner = scanner;
+
+            $scope.$apply();
+
+        }).fail(function (response) {
+
+            console.log(response.responseText);
+
+        });
+
     }
 ]);
 
 nfcRfidApp.controller('AdministratorScannersRemoveController', ['$scope',
-    'ScannersService', '$routeParams', '$location',
-    function ($scope, scannersService, $routeParams, $location) {
-        console.log('Controller active.');
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
 
-        var id = 0;
+        var scannerId = $routeParams.id;
+
+        var resource = scannersResourceById.replace(':id', scannerId);
 
         $scope.scanner = {};
+        // Structure: {
+        //   uid: '',
+        //   description: ''
+        // }
 
         $scope.notification = new Notification();
 
         $scope.remove = function () {
-            scannersService.remove(id)
-                .done(function (response) {
-                    $location.path('/administrator/scanners');
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+
+            securityService.request(resource, {
+                type: 'DELETE'
+            }).done(function () {
+
+                $location.path('/administrator/scanners');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
 
-        id = $routeParams.id;
-        var getScannersByIdPromise = scannersService.getById(id);
-        if (getScannersByIdPromise) {
-            getScannersByIdPromise
-                .done(function (scanner) {
-                    $scope.scanner = scanner;
-                    $scope.$apply();
-                })
-                .fail(function () {
-                    $location.$apply('/administrator/scanners');
-                    $scope.$apply();
-                });
-        }
+        securityService.request(resource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (scanner) {
+
+            $scope.scanner = scanner;
+
+            $scope.$apply();
+
+        }).fail(function (response) {
+
+            console.log(response.responseText);
+
+        });
+
     }
 ]);
 
@@ -191,212 +273,245 @@ nfcRfidApp.controller('AdministratorScannersRemoveController', ['$scope',
  * Administrator users controllers
  ******************************************************************************/
 
+var usersResource = '/users';
+var usersResourceById = usersResource + '/:id';
+
+var rolesResource = '/roles';
+var rolesResourceById = rolesResource + '/:id';
+
 nfcRfidApp.controller('AdministratorUsersAddController', ['$scope',
-    'UsersService', 'TagsService', 'RolesService',
-    function ($scope, usersService, tagsService, rolesService) {
+    'SecurityService', '$location', '$route',
+    function ($scope, securityService, $location, $route) {
+
         $scope.user = {};
+        // Structure: {
+        //   username: String,
+        //   password: String,
+        //   role: Number (1 to 3)
+        // }
 
         $scope.roles = [];
-        $scope.tags = [];
+        // Structure: [{
+        //   id: Number,
+        //   description: String
+        // }]
 
         $scope.notification = new Notification();
 
-        $scope.add = function () {
-            usersService.add($scope.user)
-                .done(function (response) {
-                    $scope.notification.message = response.message;
-                    $scope.user = {};
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+        $scope.post = function () {
+
+            securityService.request(usersResource, {
+                type: 'POST',
+                data: JSON.stringify($scope.user),
+                contentType: "application/json; charset=utf-8"
+            }).done(function () {
+
+                $location.path('/administrator/users');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
 
-        // The getAllRolesPromise and getAllNfcPromise  is null when parsed for
-        // the first time.
+        securityService.request(rolesResource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (roles) {
 
-        var getAllRolesPromise = rolesService.getAll();
+            $scope.roles = roles;
 
-        if (getAllRolesPromise) {
-            getAllRolesPromise
-                .done(function (roles) {
-                    $scope.roles = roles;
-                    $scope.user.role = $scope.roles[0].id;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load roles.');
-                });
-        }
+            $scope.user.role = $scope.roles[0].id; // Select first in dropdown.
 
-        var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
+            $scope.$apply();
 
-        if (getAllUnassignedTagsPromise) {
-            getAllUnassignedTagsPromise
-                .done(function (tags) {
-                    $scope.tags = tags;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load tags.');
-                });
-        }
+        }).fail(function () {
+
+            console.log('Failed to load roles.');
+
+        });
+
     }
 ]);
 
-nfcRfidApp.controller('AdministratorUsersController', ['$scope', 'UsersService',
-    function ($scope, usersService) {
-        $scope.users = [];
+/**
+ * Does a GET for all the users, using an expanded role.
+ * onDone(users) is executed before the $scope.$apply(). No need to do an apply.
+ */
+function getUsers(securityService, $scope, onDone) {
 
-        var getAllUsersPromise = usersService.getAll();
-        if (getAllUsersPromise) {
-            getAllUsersPromise
-                .done(function (users) {
-                    $scope.users = users;
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    console.log('Failed to load users.');
-                });
-        }
+    var resource = usersResource + '?expand=role';
+
+    securityService.request(resource, {
+        type: 'GET',
+        dataType: 'JSON'
+    }).done(function (users) {
+
+        $scope.users = users;
+
+        if (onDone) onDone(users);
+
+        $scope.$apply();
+
+    }).fail(function () {
+
+        console.log('Failed to load users.');
+
+    });
+
+}
+
+nfcRfidApp.controller('AdministratorUsersController', ['$scope',
+    'SecurityService',
+    function ($scope, securityService) {
+
+        $scope.users = [];
+        // Structure: [{
+        //   id: Number,
+        //   username: String,
+        //   password: String,
+        //   role: String
+        // }]
+
+        getUsers(securityService, $scope);
+
     }
 ]);
 
 nfcRfidApp.controller('AdministratorUsersEditController', ['$scope',
-    'UsersService', 'RolesService', 'TagsService', '$routeParams', '$location',
-    function ($scope, usersService, rolesService, tagsService, $routeParams,
-              $location) {
-        $scope.user_all = {};
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
+
+        var userId = $routeParams.id;
+
+        var resource = usersResourceById.replace(':id', userId);
 
         $scope.user = {};
+        // Structure: {
+        //   username: String,
+        //   password: String,
+        //   role: Number (1 to 3)
+        // }
 
         $scope.roles = [];
-        $scope.tags = [];
+        // Structure: [{
+        //   id: Number,
+        //   description: String
+        // }]
 
         $scope.notification = new Notification();
 
-        // The getAllRolesPromise and getAllNfcPromise is null when parsed for
-        // the first time.
+        $scope.put = function () {
 
-        // null - no active tag.
-        var getUnassignedTags = function (activeTag) {
-            var getAllUnassignedTagsPromise = tagsService.getAllUnassigned();
+            securityService.request(resource, {
+                type: 'PUT',
+                data: JSON.stringify($scope.user),
+                contentType: 'application/json; charset=utf-8'
+            }).done(function () {
 
-            if (getAllUnassignedTagsPromise) {
-                getAllUnassignedTagsPromise
-                    .done(function (tags) {
-                        $scope.tags = tags;
-                        if (activeTag && activeTag.id) {
-                            $scope.tags.push(activeTag);
-                            $scope.user.tag = activeTag.id;
-                        }
+                $location.path('/administrator/users');
 
-                        $scope.$apply();
-                    })
-                    .fail(function (response) {
-                        console.log('Failed to load tags.');
-                    });
-            }
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
         };
 
-        var getRoles = function (activeRoleId, callback) {
-            var getAllRolesPromise = rolesService.getAll();
+        securityService.request(rolesResource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (roles) {
 
-            if (getAllRolesPromise) {
-                getAllRolesPromise
-                    .done(function (roles) {
-                        $scope.roles = roles;
-                        for (var i = 0; i < $scope.roles.length; i++) {
-                            if ($scope.roles[i].id === activeRoleId) {
-                                $scope.user.role = $scope.roles[i].id;
-                                break;
-                            }
-                        }
+            $scope.roles = roles;
 
-                        callback();
-                    })
-                    .fail(function (response) {
-                        console.log('Failed to load roles.');
-                    });
-            }
-        };
+            $scope.$apply();
 
-        var userId = $routeParams.id;
-        var getUserByIdPromise = usersService.getById(userId);
-        if (getUserByIdPromise) {
-            getUserByIdPromise
-                .done(function (user_all) {
-                    $scope.user_all = user_all;
+        }).fail(function () {
 
-                    $scope.user = {
-                        id: user_all.user_id,
-                        username: user_all.user_username,
-                        password: user_all.user_password,
-                        role: user_all.role_id
-                    };
+            console.log('Failed to load roles.');
 
-                    getRoles(user_all.role_id, function () {
-                        getUnassignedTags({
-                            id: user_all.tag_id,
-                            uid: user_all.tag_uid
-                        });
-                    });
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
-        }
+        });
 
-        $scope.update = function () {
-            usersService.update($scope.user)
-                .done(function (message) {
-                    $location.path('/administrator/users');
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
-        };
+        securityService.request(resource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (user) {
+
+            $scope.user = user;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load user.');
+
+        });
+
     }
 ]);
 
 nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
-    'UsersService', '$routeParams', '$location',
-    function ($scope, usersService, $routeParams, $location) {
-        var id = 0;
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
 
-        $scope.notification = new Notification();
+        var userId = $routeParams.id;
+
+        var resource = usersResourceById.replace(':id', userId);
+
+        $scope.user = {};
+        // Structure: {
+        //   id: Number,
+        //   username: String,
+        //   password: String,
+        //   role: String
+        // }
+
+        var getResource = resource + '?expand=role';
+
+        securityService.request(getResource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (user) {
+
+            $scope.user = user;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load user.');
+
+        });
 
         $scope.remove = function () {
-            usersService.remove(id)
-                .done(function (response) {
-                    $location.path('/administrator/users');
-                    $scope.$apply();
-                })
-                .fail(function (response) {
-                    var error = response.responseJSON;
-                    $scope.notification.message = error.message;
-                    $scope.$apply();
-                });
+
+            securityService.request(resource, {
+                type: 'DELETE'
+            }).done(function () {
+
+                $location.path('/administrator/users');
+
+                $route.reload();
+
+            }).fail(function () {
+
+                console.log('Failed to delete user.');
+
+            });
         };
 
-        id = $routeParams.id;
-        usersService.getById(id)
-            .done(function (user) {
-                $scope.user = user;
-                $scope.$apply();
-            })
-            .fail(function () {
-                $location.$apply('/administrator/users');
-                $scope.$apply();
-            });
     }
 ]);
 
@@ -443,177 +558,139 @@ function secondsTo0(time) {
     time.setSeconds(0);
 }
 
+var userScanRulesResource = '/userScanRules';
+var userScanRulesResourceById = userScanRulesResource + '/:id';
+
 nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
-    'DatabaseQueryService', '$location',
-    function ($scope, databaseQueryService, $location) {
+    'SecurityService', '$location', '$route',
+    function ($scope, securityService, $location, $route) {
+
         $scope.minDateValidFrom = new Date();
+
+        $scope.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+            'Saturday', 'Sunday'];
+
         $scope.userScanRule = {
-            userId: 0,
-            scannerId: 0,
-            responseScannerCommandId: 0,
-            weekDay: 0,
-            timeStart: new Date(),
-            timeEnd: new Date(),
-            validFrom: new Date(),
-            validTo: new Date()
+           userId: 0,
+           scannerId: 0,
+           startTime: new Date(),
+           endTime: new Date(),
+           startDate: new Date(),
+           endDate: new Date(),
+           daysOfWeek: []
         };
+        // Structure {
+        //   userId: Number,
+        //   scannerId: Number,
+        //   startTime: String (Format 'HH:MM:SS'),
+        //   endTime: String (Format 'HH:MM:SS'),
+        //   startDate: String (Format 'YYYY-MM-DD'),
+        //   endDate: String (Format 'YYYY-MM-DD'),
+        //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
+        // }
 
         $scope.secondsTo0 = function (time) {
             secondsTo0(time);
         };
 
-        $scope.secondsTo0($scope.userScanRule.timeStart);
-        $scope.secondsTo0($scope.userScanRule.timeEnd);
+        $scope.secondsTo0($scope.userScanRule.startTime);
+        $scope.secondsTo0($scope.userScanRule.endTime);
 
         $scope.users = [];
         $scope.scanners = [];
-        $scope.scannerCommands = [];
 
         $scope.notification = new Notification();
 
-        $scope.add = function () {
-            var query = 'CALL createUserScanRule(' +
-                'user_id, ' +
-                'scanner_id, ' +
-                'response_scanner_command_id, ' +
-                'week_day, ' +
-                'time_start, ' +
-                'time_end, ' +
-                'valid_from, ' +
-                'valid_to)';
+        $scope.toggleDay = function (day) {
 
-            query = query.replace('user_id',
-                $scope.userScanRule.userId);
-            query = query.replace('scanner_id',
-                $scope.userScanRule.scannerId);
-            query = query.replace('response_scanner_command_id',
-                $scope.userScanRule.responseScannerCommandId);
-            query = query.replace('week_day',
-                $scope.userScanRule.weekDay);
-            query = query.replace('time_start',
-                jsDateToOdbcTime($scope.userScanRule.timeStart));
-            query = query.replace('time_end',
-                jsDateToOdbcTime($scope.userScanRule.timeEnd));
-            query = query.replace('valid_from',
-                jsDateToOdbcDate($scope.userScanRule.validFrom));
-            query = query.replace('valid_to',
-                jsDateToOdbcDate($scope.userScanRule.validTo));
+            var index = $scope.userScanRule.daysOfWeek.indexOf(day);
 
-            databaseQueryService.procedure({query: query})
-                .done(function (response) {
-                    $location.path('/moderator/userScanRules');
-                    $scope.$apply();
-                    console.log(JSON.stringify(response));
-                })
-                .fail(function (response) {
-                    console.log(JSON.stringify(response));
-                });
-        };
-
-        var scannersGetQuery = databaseQueryService.get(
-            'SELECT scanners.id AS id, ' +
-            'scanners.uid AS uid, ' +
-            'scanners.description AS description ' +
-            'FROM scanners '
-        );
-
-        function getScannerCommandsForScannerId(id) {
-            $scope.scannerCommands = [];
-
-            var scannerCommandsGetQuery = databaseQueryService.get(
-                'SELECT scanner_commands.id AS id, ' +
-                'scanner_commands.command AS command ' +
-                'FROM scanner_commands ' +
-                'WHERE scanner=' + id
-            );
-
-            if (scannerCommandsGetQuery) {
-                scannerCommandsGetQuery.done(function (scannerCommands) {
-                    $scope.scannerCommands = scannerCommands;
-                    $scope.userScanRule.responseScannerCommandId =
-                        scannerCommands[0].id;
-                    $scope.$apply();
-                }).fail(function (error) {
-                    console.log(JSON.stringify(error));
-                });
+            if (index >= 0) {
+                $scope.userScanRule.daysOfWeek.splice(index, 1);
+            } else {
+                $scope.userScanRule.daysOfWeek.push(day);
             }
-        }
 
-        $scope.queryScannerCommandsForScannerId = function (id) {
-            getScannerCommandsForScannerId(id);
         };
 
-        if (scannersGetQuery) {
-            scannersGetQuery.done(function (scanners) {
-                $scope.scanners = scanners;
-                $scope.userScanRule.scannerId = scanners[0].id;
-                getScannerCommandsForScannerId(scanners[0].id);
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
-            });
-        }
+        $scope.post = function () {
 
-        var usersGetQuery = databaseQueryService.get(
-            'SELECT users.id AS id, ' +
-            'users.username AS username ' +
-            'FROM users'
-        );
+            $scope.userScanRule.startTime = jsDateToOdbcTime(
+                $scope.userScanRule.startTime);
+            $scope.userScanRule.endTime = jsDateToOdbcTime(
+                $scope.userScanRule.endTime);
 
-        if (usersGetQuery) {
-            usersGetQuery.done(function (users) {
-                $scope.users = users;
-                $scope.userScanRule.userId = users[0].id;
+            $scope.userScanRule.startDate = jsDateToOdbcDate(
+                $scope.userScanRule.startDate);
+            $scope.userScanRule.endDate = jsDateToOdbcDate(
+                $scope.userScanRule.endDate);
+
+            securityService.request(userScanRulesResource, {
+                type: 'POST',
+                data: JSON.stringify($scope.userScanRule),
+                contentType: 'application/json; charset=utf-8'
+            }).done(function () {
+
+                $location.path('/moderator/userScanRules');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
                 $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
+
             });
-        }
+
+        };
+
+        getScanners(securityService, $scope, function (scanners) {
+            $scope.userScanRule.scannerId = scanners[0].id;
+        });
+
+        getUsers(securityService, $scope, function (users) {
+            $scope.userScanRule.userId = users[0].id;
+        });
+
     }
 ]);
 
 nfcRfidApp.controller('ModeratorUserScanRulesController', ['$scope',
-    'DatabaseQueryService', function ($scope, databaseQueryService) {
+    'SecurityService', function ($scope, securityService) {
+
+        $scope.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+            'Friday', 'Saturday'];
 
         $scope.userScanRules = [];
-        /**
-         * {
-         *   id: Number,
-         *   username: String,
-         *   scannerUid: String,
-         *   responseCommand: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
+        // Structure: [{
+        //   id: Number,
+        //   username: String,
+        //   scannerUid: String,
+        //   startTime: String (Format 'HH:MM:SS'),
+        //   endTime: String (Format 'HH:MM:SS'),
+        //   startDate: String (Format 'YYYY-MM-DD'),
+        //   endDate: String (Format 'YYYY-MM-DD'),
+        //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
+        // }]
 
-        var userScanRulesGet = databaseQueryService.get(
-            'SELECT user_scanner_rules.id AS id, ' +
-            'users.username AS username, ' +
-            'scanners.uid AS scannerUid, ' +
-            'scanner_commands.command AS responseCommand, ' +
-            'user_scanner_rules.week_day AS weekDay, ' +
-            'user_scanner_rules.time_start AS timeStart, ' +
-            'user_scanner_rules.time_end AS timeEnd, ' +
-            'user_scanner_rules.valid_from AS validFrom, ' +
-            'user_scanner_rules.valid_to AS validTo ' +
-            'FROM users, scanners, scanner_commands, user_scanner_rules ' +
-            'WHERE users.id = user_scanner_rules.user AND ' +
-            'scanners.id = user_scanner_rules.scanner AND ' +
-            'scanner_commands.id = user_scanner_rules.response_scanner_command'
-        );
+        var resource = userScanRulesResource + '?expand=user,scanner';
 
-        if (userScanRulesGet) {
-            userScanRulesGet.done(function (userScanRules) {
-                $scope.userScanRules = userScanRules;
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
-            });
-        }
+        securityService.request(resource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (userScanRules) {
+
+            $scope.userScanRules = userScanRules;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load user scan rules.');
+
+        });
+
     }
 ]);
 
@@ -768,8 +845,8 @@ nfcRfidApp.controller('ModeratorAccessRequestsEditController', ['$scope',
 
         $scope.add = function () {
             securityService.request('/approveAccessRequest', {
-                type:'post',
-                data:{
+                type: 'post',
+                data: {
                     accessRequestId: accessRequestId,
                     responseScannerCommandId: $scope.userScanRule.responseScannerCommandId
                 },

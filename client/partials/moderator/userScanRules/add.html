@@ -9,7 +9,7 @@
                 class="form-control"
                 data-ng-model="userScanRule.userId"
                 data-ng-options="user.id as user.username
-                                     for user in users">
+                                 for user in users">
         </select>
     </div>
 
@@ -19,34 +19,31 @@
                 class="form-control"
                 data-ng-model="userScanRule.scannerId"
                 data-ng-options="scanner.id as scanner.description
-                                     for scanner in scanners"
-                data-ng-change="queryScannerCommandsForScannerId(
-                    userScanRule.scannerId)">
+                                 for scanner in scanners">
         </select>
     </div>
 
     <div class="form-group row col-lg-6 col-md-offset-3">
-        <label for="scanner-command">Respond with command</label>
-        <select id="scanner-command" class="form-control"
-                data-ng-model="userScanRule.responseScannerCommandId"
-                data-ng-options="scannerCommand.id as
-                                     scannerCommand.command
-                                     for scannerCommand in scannerCommands">
-        </select>
-    </div>
-
-    <div class="form-group row col-lg-6 col-md-offset-3">
-        <label for="week-day">Day</label>
-        <select id="week-day" class="form-control"
-                data-ng-model="userScanRule.weekDay">
-            <option value="0">Monday</option>
-            <option value="1">Tuesday</option>
-            <option value="2">Wednesday</option>
-            <option value="3">Thursday</option>
-            <option value="4">Friday</option>
-            <option value="5">Saturday</option>
-            <option value="6">Sunday</option>
-        </select>
+        <label>Days</label>
+        <label data-ng-repeat="day in days">
+            <input
+                    type="checkbox"
+                    name="selectedDays[]"
+                    value="{{day}}"
+                    data-ng-checked="days.indexOf(day) < 0"
+                    data-ng-click="toggleDay(day)">
+            {{day}}
+        </label>
+        <!--<select id="week-day" class="form-control"-->
+                <!--data-ng-model="userScanRule.weekDay">-->
+            <!--<option value="0">Monday</option>-->
+            <!--<option value="1">Tuesday</option>-->
+            <!--<option value="2">Wednesday</option>-->
+            <!--<option value="3">Thursday</option>-->
+            <!--<option value="4">Friday</option>-->
+            <!--<option value="5">Saturday</option>-->
+            <!--<option value="6">Sunday</option>-->
+        <!--</select>-->
     </div>
 
     <div class="form-group row col-lg-12 col-md-offset-1">

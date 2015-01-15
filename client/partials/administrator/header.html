@@ -56,9 +56,13 @@
                 </li>
             </ul>
 
-            <ul class="nav navbar-nav navbar-right">
+            <ul class="nav navbar-nav navbar-right"
+                data-ng-controller="LogoutController as logoutCtrl">
                 <li>
-                    <a href="#">Logout</a>
+                    <a href=""
+                       data-ng-click="logoutCtrl.logout()">
+                        Logout
+                    </a>
                 </li>
             </ul>
         </div>
