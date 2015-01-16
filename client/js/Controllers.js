@@ -660,7 +660,7 @@ function jsDateToOdbcTime(date) {
  */
 function jsDateYYYYMMDDFormat(date, delimiter) {
     date = new Date(date);
-    var dayOfMonth = date.getDate() + 1;
+    var dayOfMonth = date.getDate();
     var month = date.getMonth() + 1;
     var year = date.getFullYear();
 
@@ -816,10 +816,18 @@ nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
     }
 ]);
 
+/**
+ * number is specified as an integer in range [1 .. 7].
+ * 1 - Sunday,
+ * 2 - Monday,
+ * 3 - Tuesday
+ * ...
+ * 7 - Saturday
+ */
 function intToDayOfWeek(number) {
 
     return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday'][number];
+        'Friday', 'Saturday'][number - 1];
 
 }
 
@@ -938,6 +946,10 @@ nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
     }
 ]);
 
+/*******************************************************************************
+ * Moderator user scan rule requests controllers
+ ******************************************************************************/
+
 var userScanRuleRequestsResource = '/userScanRuleRequests';
 var userScanRuleRequestsResourceById = userScanRuleRequestsResource + '/:id';
 
@@ -984,6 +996,39 @@ nfcRfidApp.controller('ModeratorAccessRequestsController', ['$scope',
 
     }
 ]);
+
+/*******************************************************************************
+ * Moderator reports controllers
+ ******************************************************************************/
+
+var userScanTimesResource = '/userScanTimes';
+
+nfcRfidApp.controller('ModeratorReportsEntranceTimesController', ['$scope',
+    'SecurityService', function ($scope, securityService) {
+
+        $scope.userScanTimes = [];
+
+        securityService.request(userScanTimesResource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (userScanTimes) {
+
+            $scope.userScanTimes = userScanTimes;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load user scan times.');
+
+        });
+
+    }
+]);
+
+/*******************************************************************************
+ * User requests controllers
+ ******************************************************************************/
 
 nfcRfidApp.controller('UserRequestsAddController', ['$scope',
     'SecurityService', '$location', '$route',

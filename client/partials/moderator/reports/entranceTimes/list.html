@@ -1,0 +1,35 @@
+<div data-ng-include="'partials/moderator/header.html'"></div>
+
+<legend class="row col-lg-10 col-md-offset-1">Entrance times</legend>
+
+<div class="container">
+    <table class="table table-striped row col-lg-10">
+        <thead>
+        <tr>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="searchKeyword.username">
+            </th>
+            <th>
+                <input type="text"
+                       class="form-control"
+                       data-ng-model="searchKeyword.scannerUid">
+            </th>
+            <th></th>
+        </tr>
+        <tr>
+            <th>User</th>
+            <th>Scanner UID</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-ng-repeat="userScanTime in userScanTimes | filter:searchKeyword">
+            <td>{{ userScanTime.username }}</td>
+            <td>{{ userScanTime.scannerUid }}</td>
+            <td>{{ userScanTime.scanTimestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

@@ -68,6 +68,10 @@ nfcRfidApp.config(function ($routeProvider) {
             templateUrl: 'partials/moderator/accessRequests/list.html',
             controller: 'ModeratorAccessRequestsController'
         })
+        .when('/moderator/reports/entranceTimes', {
+            templateUrl: 'partials/moderator/reports/entranceTimes/list.html',
+            controller: 'ModeratorReportsEntranceTimesController'
+        })
         .when('/user/requests/add', {
             templateUrl: 'partials/user/requests/add.html',
             controller: 'UserRequestsAddController'

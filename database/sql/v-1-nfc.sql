@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS tags (
   uid  VARCHAR(30) NOT NULL,
   user BIGINT,
   PRIMARY KEY pk_tags(id),
-  UNIQUE uq_tags_user(user),
+  UNIQUE uq_tags_uid(uid),
   FOREIGN KEY fk_tags_users(user) REFERENCES users (id)
     ON DELETE SET NULL
 );
@@ -140,3 +140,11 @@ CREATE TABLE IF NOT EXISTS user_scan_times (
 );
 
 $$
+
+################################################################################
+## Default administrator and moderator accounts.
+################################################################################
+
+INSERT INTO users (username, password, role)
+VALUES ('administrator', 'password', 1),
+  ('moderator', 'password', 2)
