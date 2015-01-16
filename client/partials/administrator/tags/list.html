@@ -1,0 +1,35 @@
+<div data-ng-include="'partials/administrator/header.html'"></div>
+
+<legend class="row col-lg-10 col-md-offset-1">Tags</legend>
+
+<div class="container">
+    <table class="table table-striped col-lg-10">
+        <thead>
+        <tr>
+            <th><input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.uid"></th>
+            <th><input type="text"
+                       class="form-control"
+                       data-ng-model="search_keyword.username"></th>
+        </tr>
+        <tr>
+            <th>Unique ID</th>
+            <th>User</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-ng-repeat="tag in tags | filter:search_keyword">
+            <td>{{ tag.uid }}</td>
+            <td>
+                {{ tag.username }}
+                <a href="#/administrator/tags/assign/{{tag.id}}"
+                   class="btn btn-primary {{!tag.username ? '' : 'hidden'}}">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    &nbsp;&nbsp;Assign
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

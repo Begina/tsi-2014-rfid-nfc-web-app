@@ -41,6 +41,14 @@ nfcRfidApp.config(function ($routeProvider) {
             templateUrl: 'partials/administrator/users/remove.html',
             controller: 'AdministratorUsersRemoveController'
         })
+        .when('/administrator/tags', {
+            templateUrl: 'partials/administrator/tags/list.html',
+            controller: 'AdministratorTagsController'
+        })
+        .when('/administrator/tags/assign/:id', {
+            templateUrl: 'partials/administrator/tags/edit.html',
+            controller: 'AdministratorTagsEditController'
+        })
         .when('/moderator/dashboard', {
             templateUrl: 'partials/moderator/dashboard.html'
         })

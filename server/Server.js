@@ -685,7 +685,7 @@ app.get(ROUTE.users, function (req, res) {
         'role AS role ' +
         'FROM users';
 
-    if (expand.indexOf('role') >= 0) {
+    if (expand && expand.indexOf('role') >= 0) {
         select = 'SELECT users.id AS id, ' +
         'users.username AS username, ' +
         'users.password AS password, ' +
@@ -1037,12 +1037,20 @@ app.post(ROUTE.tags, function (req, res) {
  */
 app.get(ROUTE.tags, function (req, res) {
 
-    dbConnectionPool.query('SELECT id AS id, ' +
-        'uid AS uid, ' +
-        'user AS userId ' +
-        'FROM tags',
-        [],
-        function (err, results) {
+    var expand = req.query.expand;
+
+    var select = 'SELECT id AS id, uid AS uid, user AS userId FROM tags';
+
+    if (expand && expand.indexOf('user') >= 0) {
+        select = 'SELECT tags.id AS id, ' +
+            'tags.uid AS uid, ' +
+            'users.username AS username ' +
+            'FROM tags ' +
+            'LEFT OUTER JOIN users ON tags.user = users.id';
+    }
+
+    dbConnectionPool.query(select, [], function (err, results) {
+
             if (err) {
                 res.status(500);
                 res.send(err);
@@ -1050,6 +1058,7 @@ app.get(ROUTE.tags, function (req, res) {
             }
 
             res.send(results);
+
         }
     );
 
@@ -1151,6 +1160,66 @@ app.put(ROUTE.tags + '/:id', function (req, res) {
 
             res.status(404);
             res.send('Id or user id invalid.');
+        }
+    );
+
+});
+
+/**
+ * PATCH /tags/:id
+ *
+ * Input: userId: Number (0-No user)
+ *
+ * Output: 'Tag updated successfully.' (On success.)
+ *         'Error.' (On error.)
+ */
+app.patch(ROUTE.tags + '/:id', function (req, res) {
+
+    var tagId = parseInt(req.params.id);
+    var userId = req.body;
+
+    if (!userId.hasOwnProperty('userId')) {
+        sendInputParametersErrorResponse(res, 'User id invalid.');
+
+        return;
+    }
+
+    userId = userId.userId;
+    
+    var idError = getIdParameterError(tagId);
+
+    if (idError) {
+        sendInputParametersErrorResponse(res, idError);
+        return;
+    }
+
+    var userIdError = getIdParameterError(userId);
+
+    if (userIdError) {
+        sendInputParametersErrorResponse(res, userIdError);
+        return;
+    }
+
+    dbConnectionPool.query('UPDATE tags ' +
+        'SET user = ? ' +
+        'WHERE id = ?',
+        [userId, tagId],
+        function (err, result) {
+
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (result.affectedRows > 0) {
+                res.send('Tag updated successfully.');
+                return;
+            }
+
+            res.status(404);
+            res.send('Id or user id invalid.');
+
         }
     );
 

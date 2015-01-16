@@ -526,6 +526,121 @@ nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
 ]);
 
 /*******************************************************************************
+ * Administrator tags controllers
+ ******************************************************************************/
+
+var tagsResource = '/tags';
+var tagsResourceById = tagsResource + '/:id';
+
+nfcRfidApp.controller('AdministratorTagsController', ['$scope',
+    'SecurityService',
+    function ($scope, securityService) {
+
+        $scope.tags = {};
+        // Structure: {
+        //   id: Number,
+        //   uid: String,
+        //   username: String
+        // }
+
+        var resource = tagsResource + '?expand=user';
+
+        securityService.request(resource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (tags) {
+
+            $scope.tags = tags;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load tags.');
+
+        });
+
+    }
+]);
+
+nfcRfidApp.controller('AdministratorTagsEditController', ['$scope',
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
+
+        var tagId = $routeParams.id;
+
+        var resource = tagsResourceById.replace(':id', tagId);
+
+        $scope.userId = 0;
+
+        $scope.users = [];
+
+        $scope.tag = {};
+        // Structure: {
+        //   id: Number,
+        //   uid: String,
+        //   user: Number
+        // }
+
+        $scope.notification = new Notification();
+
+        securityService.request(usersResource, {
+            type: 'GET',
+            dataType: 'JSON'
+        }).done(function (users) {
+
+            $scope.users = users;
+
+            $scope.userId = users[0].id;
+
+            $scope.$apply();
+
+        }).fail(function () {
+
+            console.log('Failed to load users.');
+
+        });
+
+        securityService.request(resource, {
+            type: 'GET'
+        }).done(function (tag) {
+
+            $scope.tag = tag;
+
+            $scope.$apply();
+
+        }).fail(function (response) {
+
+            console.log('Failed to load tag.');
+
+        });
+
+        $scope.assign = function () {
+
+            securityService.request(resource, {
+                type: 'PATCH',
+                data: JSON.stringify({userId: $scope.userId}),
+                contentType: 'application/json; charset=utf-8'
+            }).done(function () {
+
+                $location.path('/administrator/tags');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                $scope.notification.message = response.responseText;
+
+                $scope.$apply();
+
+            });
+
+        }
+
+    }
+]);
+
+/*******************************************************************************
  * Moderator user scan rules controllers
  ******************************************************************************/
 
