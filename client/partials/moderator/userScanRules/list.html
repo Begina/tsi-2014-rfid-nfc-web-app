@@ -57,20 +57,7 @@
         <tr data-ng-repeat="userScanRule in userScanRules | filter:searchKeyword">
             <td>{{ userScanRule.username }}</td>
             <td>{{ userScanRule.scannerUid }}</td>
-            <td>
-                <span data-ng-repeat="dayOfWeek in userScanRule.daysOfWeek">
-                    {{days[dayOfWeek]}}
-                </span>
-                <!--<label data-ng-repeat="day in days">-->
-                    <!--<input-->
-                            <!--type="checkbox"-->
-                            <!--name="selectedDays[]"-->
-                            <!--value="{{day}}"-->
-                            <!--data-ng-checked="days.indexOf(day) < 0"-->
-                            <!--data-ng-click="toggleDay(day)">-->
-                    <!--{{day}}-->
-                <!--</label>-->
-            </td>
+            <td>{{intsToDaysOfWeek(userScanRule.daysOfWeek)}}</td>
             <td>{{ userScanRule.startDate | date: 'yyyy-MM-dd' }}</td>
             <td>{{ userScanRule.endDate | date: 'yyyy-MM-dd' }}</td>
             <td>{{ userScanRule.startTime | date: 'HH:mm' }}</td>

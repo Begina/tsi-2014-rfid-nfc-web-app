@@ -2,37 +2,41 @@
 
 <legend class="row col-lg-10 col-md-offset-1">Remove user</legend>
 
-<h2>Are you sure you want to delete the user scan rule:</h2>
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>User</th>
-        <th>Scanner UID</th>
-        <th>Response command</th>
-        <th>Week day</th>
-        <th>Valid from</th>
-        <th>Valid to</th>
-        <th>Time start</th>
-        <th>Time end</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr data-ng-repeat="userScanRule in userScanRules">
-        <td>{{ userScanRule.username }}</td>
-        <td>{{ userScanRule.scannerUid }}</td>
-        <td>{{ userScanRule.responseCommand }}</td>
-        <td>{{ userScanRule.weekDay }}</td>
-        <td>{{ userScanRule.validFrom | date: 'yyyy-MM-dd' }}</td>
-        <td>{{ userScanRule.validTo | date: 'yyyy-MM-dd' }}</td>
-        <td>{{ userScanRule.timeStart | date: 'HH:mm' }}</td>
-        <td>{{ userScanRule.timeEnd | date: 'HH:mm' }}</td>
-    </tr>
-    </tbody>
-</table>
+<div class="container">
+    <h2>Are you sure you want to delete the user scan rule:</h2>
+    <table class="table table-striped row col-lg-10">
+        <thead>
+        <tr>
+            <th>User</th>
+            <th>Scanner UID</th>
+            <th>Week day</th>
+            <th>Valid from</th>
+            <th>Valid to</th>
+            <th>Time start</th>
+            <th>Time end</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ userScanRule.username }}</td>
+            <td>{{ userScanRule.scannerUid }}</td>
+            <td>{{ intsToDaysOfWeek(userScanRule.daysOfWeek) }}</td>
+            <td>{{ userScanRule.startDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.endDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.startTime | date: 'HH:mm' }}</td>
+            <td>{{ userScanRule.endTime | date: 'HH:mm' }}</td>
+        </tr>
+        </tbody>
+    </table>
 
-<button class="btn btn-default" data-ng-click="remove()">
-    <i class="glyphicon glyphicon-ok"></i> Remove
-</button>
-<a href="#/moderator/userScanRules" class="btn btn-default">
-    <i class="glyphicon glyphicon-remove"></i> Cancel
-</a>
+    <div class="row col-lg-8 col-md-offset-3">
+        <button class="btn btn-default col-lg-3"
+                data-ng-click="remove()">
+            <i class="glyphicon glyphicon-ok"></i> Remove
+        </button>
+        <a href="#/moderator/userScanRules"
+           class="btn btn-default col-lg-3 col-md-offset-1">
+            <i class="glyphicon glyphicon-remove"></i> Cancel
+        </a>
+    </div>
+</div>

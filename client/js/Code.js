@@ -185,13 +185,7 @@ var SecurityService = function (onNotLoggedIn) {
 
     var websiteAccessResource = '/accesses';
 
-    var user = null; // null if logged out.
-    // Structure
-    // {
-    //   role: 0, // 0 if logged out.
-    //   username: null, // Falsy if logged out.
-    //   password: null // Falsy if logged out.
-    // }
+    var isLoggedIn = false;
 
     this.setOnNotLoggedIn = function (onNotLoggedInNew) {
         onNotLoggedIn = onNotLoggedInNew;
@@ -227,10 +221,8 @@ var SecurityService = function (onNotLoggedIn) {
             }
         }).done(function (role) {
 
-            console.log('Logged in. Role: ' + role);
-
             if (role) {
-                user = {
+                var user = {
                     role: role,
                     username: credentials.username,
                     password: credentials.password
@@ -245,29 +237,19 @@ var SecurityService = function (onNotLoggedIn) {
 
     this.logout = function () {
 
-        var user = CookieManager.load('user');
-
-        var authorization = buildAuthorizationHeader(user.username,
-            user.password);
-
-        return $.ajax(websiteAccessResource, {
-            type: 'POST',
-            dataType: 'JSON',
-            crossDomain: true,
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader ("Authorization", authorization);
-            }
-        }).done(function () {
-
-            CookieManager.remove('user');
-
-        });
+        CookieManager.remove('user');
 
     };
 
     this.isLoggedIn = function () {
 
-        return CookieManager.exists('user');
+        var user = CookieManager.load('user')
+
+        if (user) {
+            return true;
+        }
+
+        return false;
 
     };
 

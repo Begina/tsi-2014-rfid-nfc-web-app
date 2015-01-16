@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS users (
   username  VARCHAR(50)  NOT NULL,
   password  VARCHAR(512) NOT NULL,
   role      INT          NOT NULL,
-  logged_in INT                   DEFAULT NULL,
   PRIMARY KEY pk_users(id),
-  FOREIGN KEY fk_users_roles(role) REFERENCES roles (id)
+  FOREIGN KEY fk_users_roles(role) REFERENCES roles (id),
+  UNIQUE uq_user_username(username)
 );
 
 $$

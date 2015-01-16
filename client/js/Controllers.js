@@ -20,11 +20,15 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
 
         }
 
-        var role = securityService.getRole();
-
-        if (role) {
+        var onLoggedIn = function (role) {
             redirectToDashboard(role);
-        }
+        };
+
+        securityService.isLoggedIn(onLoggedIn);
+
+        //if (role) {
+        //    redirectToDashboard(role);
+        //}
 
         $scope.credentials = {
             username: '',
@@ -41,6 +45,8 @@ nfcRfidApp.controller('LoginController', ['$scope', 'SecurityService',
 
             }).fail(function (response) {
 
+                console.log(JSON.stringify(response));
+
                 $scope.notification.message = response.responseText;
 
                 $scope.$apply();
@@ -56,19 +62,23 @@ nfcRfidApp.controller('LogoutController', ['$scope', 'SecurityService',
     '$location', '$route',
     function ($scope, securityService, $location, $route) {
 
+        function redirectToLogin() {
+
+            $location.path('/login');
+
+            $route.reload();
+
+        }
+
+        if (!securityService.isLoggedIn()) {
+            redirectToLogin();
+        }
+
         this.logout = function () {
 
-            securityService.logout().done(function () {
+            securityService.logout();
 
-                $location.path('/login');
-
-                $route.reload();
-
-            }).fail(function () {
-
-                console.log('Trying something criminal?');
-
-            });
+            redirectToLogin();
 
         };
 
@@ -519,13 +529,13 @@ nfcRfidApp.controller('AdministratorUsersRemoveController', ['$scope',
  * Moderator user scan rules controllers
  ******************************************************************************/
 
-function jsDateToMysqlTime(date) {
+function jsDateToHHMMSS(date) {
     date = new Date(date);
     return date.toTimeString().slice(0, 8);
 }
 
 function jsDateToOdbcTime(date) {
-    return "{ t '" + jsDateToMysqlTime(date) + "' }";
+    return "{ t '" + jsDateToHHMMSS(date) + "' }";
 }
 
 /**
@@ -533,7 +543,7 @@ function jsDateToOdbcTime(date) {
  * @param date
  * @param delimiter
  */
-function jsDateFormat(date, delimiter) {
+function jsDateYYYYMMDDFormat(date, delimiter) {
     date = new Date(date);
     var dayOfMonth = date.getDate() + 1;
     var month = date.getMonth() + 1;
@@ -551,7 +561,7 @@ function jsDateFormat(date, delimiter) {
 
 function jsDateToOdbcDate(date) {
     var delimiter = '-';
-    return "{ d '" + jsDateFormat(date, delimiter) + "' }";
+    return "{ d '" + jsDateYYYYMMDDFormat(date, delimiter) + "' }";
 }
 
 function secondsTo0(time) {
@@ -561,24 +571,211 @@ function secondsTo0(time) {
 var userScanRulesResource = '/userScanRules';
 var userScanRulesResourceById = userScanRulesResource + '/:id';
 
+function dayOfWeekToInt(dayOfWeek) {
+    return {
+        Sunday: 1,
+        Monday: 2,
+        Tuesday: 3,
+        Wednesday: 4,
+        Thursday: 5,
+        Friday: 6,
+        Saturday: 7
+    }[dayOfWeek];
+}
+
+function userScanRuleCreate($scope, securityService, $location, $route,
+                            resource, redirect) {
+
+    $scope.minStartDate = new Date();
+
+    $scope.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+        'Saturday', 'Sunday'];
+
+    $scope.userScanRule = {
+        userId: 0,
+        scannerId: 0,
+        startTime: new Date(),
+        endTime: new Date(),
+        startDate: new Date(),
+        endDate: new Date(),
+        daysOfWeek: []
+    };
+    // Structure {
+    //   userId: Number,
+    //   scannerId: Number,
+    //   startTime: String (Format 'HH:MM:SS'),
+    //   endTime: String (Format 'HH:MM:SS'),
+    //   startDate: String (Format 'YYYY-MM-DD'),
+    //   endDate: String (Format 'YYYY-MM-DD'),
+    //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
+    // }
+
+    $scope.secondsTo0 = function (time) {
+        secondsTo0(time);
+    };
+
+    $scope.secondsTo0($scope.userScanRule.startTime);
+    $scope.secondsTo0($scope.userScanRule.endTime);
+
+    $scope.users = [];
+    $scope.scanners = [];
+
+    $scope.notification = new Notification();
+
+    $scope.toggleDay = function (day) {
+
+        var index = $scope.userScanRule.daysOfWeek.indexOf(day);
+
+        if (index >= 0) {
+            $scope.userScanRule.daysOfWeek.splice(index, 1);
+        } else {
+            $scope.userScanRule.daysOfWeek.push(day);
+        }
+
+    };
+
+    $scope.post = function () {
+
+        $scope.userScanRule.startTime = jsDateToHHMMSS(
+            $scope.userScanRule.startTime);
+        $scope.userScanRule.endTime = jsDateToHHMMSS(
+            $scope.userScanRule.endTime);
+
+        $scope.userScanRule.startDate = jsDateYYYYMMDDFormat(
+            $scope.userScanRule.startDate, '-');
+        $scope.userScanRule.endDate = jsDateYYYYMMDDFormat(
+            $scope.userScanRule.endDate, '-');
+
+        for (var i = 0; i < $scope.userScanRule.daysOfWeek.length; i++) {
+            $scope.userScanRule.daysOfWeek[i] = dayOfWeekToInt(
+                $scope.userScanRule.daysOfWeek[i]);
+        }
+
+        securityService.request(resource, {
+            type: 'POST',
+            data: JSON.stringify($scope.userScanRule),
+            contentType: 'application/json; charset=utf-8'
+        }).done(function () {
+
+            $location.path(redirect);
+
+            $route.reload();
+
+        }).fail(function (response) {
+
+            $scope.notification.message = response.responseText;
+
+            $scope.$apply();
+
+        });
+
+    };
+
+}
+
+function userScanRuleCreateController($scope, securityService, resource,
+                                      $location, $route, redirect) {
+
+    userScanRuleCreate($scope, securityService, $location, $route,
+        resource, redirect);
+
+    getScanners(securityService, $scope, function (scanners) {
+        $scope.userScanRule.scannerId = scanners[0].id;
+    });
+
+    getUsers(securityService, $scope, function (users) {
+        $scope.userScanRule.userId = users[0].id;
+    });
+
+}
+
 nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
     'SecurityService', '$location', '$route',
     function ($scope, securityService, $location, $route) {
 
-        $scope.minDateValidFrom = new Date();
+        var redirect = '/moderator/userScanRules';
 
-        $scope.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-            'Saturday', 'Sunday'];
+        userScanRuleCreateController($scope, securityService,
+            userScanRulesResource, $location, $route, redirect);
 
-        $scope.userScanRule = {
-           userId: 0,
-           scannerId: 0,
-           startTime: new Date(),
-           endTime: new Date(),
-           startDate: new Date(),
-           endDate: new Date(),
-           daysOfWeek: []
+    }
+]);
+
+function intToDayOfWeek(number) {
+
+    return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+        'Friday', 'Saturday'][number];
+
+}
+
+function intsToDaysOfWeek(numbers) {
+
+    var i, daysOfWeek = '';
+
+    for (i = 0; i < numbers.length; i++) {
+        daysOfWeek += intToDayOfWeek(numbers[i]) + ', ';
+    }
+
+    return daysOfWeek.slice(0, daysOfWeek.length - 2);
+
+}
+
+function requestUserScanRules($scope, resource, securityService) {
+
+    $scope.intsToDaysOfWeek = function (numbers) {
+        return intsToDaysOfWeek(numbers);
+    };
+
+    $scope.userScanRules = [];
+    // Structure: [{
+    //   id: Number,
+    //   username: String,
+    //   scannerUid: String,
+    //   startTime: String (Format 'HH:MM:SS'),
+    //   endTime: String (Format 'HH:MM:SS'),
+    //   startDate: String (Format 'YYYY-MM-DD'),
+    //   endDate: String (Format 'YYYY-MM-DD'),
+    //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
+    // }]
+
+    resource = resource + '?expand=user,scanner';
+
+    securityService.request(resource, {
+        type: 'GET',
+        dataType: 'JSON'
+    }).done(function (userScanRules) {
+
+        $scope.userScanRules = userScanRules;
+
+        $scope.$apply();
+
+    }).fail(function () {
+
+        console.log('Failed to load user scan rules.');
+
+    });
+
+}
+
+nfcRfidApp.controller('ModeratorUserScanRulesController', ['$scope',
+    'SecurityService', function ($scope, securityService) {
+
+        requestUserScanRules($scope, userScanRulesResource, securityService)
+
+    }
+]);
+
+nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
+    'SecurityService', '$routeParams', '$location', '$route',
+    function ($scope, securityService, $routeParams, $location, $route) {
+
+        $scope.intsToDaysOfWeek = function (numbers) {
+            return intsToDaysOfWeek(numbers);
         };
+
+        var userScanRuleId = $routeParams.id;
+
+        $scope.userScanRule = {};
         // Structure {
         //   userId: Number,
         //   scannerId: Number,
@@ -589,99 +786,14 @@ nfcRfidApp.controller('ModeratorUserScanRulesAddController', ['$scope',
         //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
         // }
 
-        $scope.secondsTo0 = function (time) {
-            secondsTo0(time);
-        };
+        var resource = userScanRulesResourceById.replace(':id', userScanRuleId);
 
-        $scope.secondsTo0($scope.userScanRule.startTime);
-        $scope.secondsTo0($scope.userScanRule.endTime);
-
-        $scope.users = [];
-        $scope.scanners = [];
-
-        $scope.notification = new Notification();
-
-        $scope.toggleDay = function (day) {
-
-            var index = $scope.userScanRule.daysOfWeek.indexOf(day);
-
-            if (index >= 0) {
-                $scope.userScanRule.daysOfWeek.splice(index, 1);
-            } else {
-                $scope.userScanRule.daysOfWeek.push(day);
-            }
-
-        };
-
-        $scope.post = function () {
-
-            $scope.userScanRule.startTime = jsDateToOdbcTime(
-                $scope.userScanRule.startTime);
-            $scope.userScanRule.endTime = jsDateToOdbcTime(
-                $scope.userScanRule.endTime);
-
-            $scope.userScanRule.startDate = jsDateToOdbcDate(
-                $scope.userScanRule.startDate);
-            $scope.userScanRule.endDate = jsDateToOdbcDate(
-                $scope.userScanRule.endDate);
-
-            securityService.request(userScanRulesResource, {
-                type: 'POST',
-                data: JSON.stringify($scope.userScanRule),
-                contentType: 'application/json; charset=utf-8'
-            }).done(function () {
-
-                $location.path('/moderator/userScanRules');
-
-                $route.reload();
-
-            }).fail(function (response) {
-
-                $scope.notification.message = response.responseText;
-
-                $scope.$apply();
-
-            });
-
-        };
-
-        getScanners(securityService, $scope, function (scanners) {
-            $scope.userScanRule.scannerId = scanners[0].id;
-        });
-
-        getUsers(securityService, $scope, function (users) {
-            $scope.userScanRule.userId = users[0].id;
-        });
-
-    }
-]);
-
-nfcRfidApp.controller('ModeratorUserScanRulesController', ['$scope',
-    'SecurityService', function ($scope, securityService) {
-
-        $scope.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-            'Friday', 'Saturday'];
-
-        $scope.userScanRules = [];
-        // Structure: [{
-        //   id: Number,
-        //   username: String,
-        //   scannerUid: String,
-        //   startTime: String (Format 'HH:MM:SS'),
-        //   endTime: String (Format 'HH:MM:SS'),
-        //   startDate: String (Format 'YYYY-MM-DD'),
-        //   endDate: String (Format 'YYYY-MM-DD'),
-        //   daysOfWeek: [Number (1-Sunday, ..., 7-Monday)]
-        // }]
-
-        var resource = userScanRulesResource + '?expand=user,scanner';
-
-        securityService.request(resource, {
+        securityService.request(resource + '?expand=user,scanner', {
             type: 'GET',
             dataType: 'JSON'
-        }).done(function (userScanRules) {
+        }).done(function (userScanRule) {
 
-            $scope.userScanRules = userScanRules;
+            $scope.userScanRule = userScanRule;
 
             $scope.$apply();
 
@@ -691,309 +803,102 @@ nfcRfidApp.controller('ModeratorUserScanRulesController', ['$scope',
 
         });
 
-    }
-]);
-
-nfcRfidApp.controller('ModeratorUserScanRulesRemoveController', ['$scope',
-    'DatabaseQueryService', '$routeParams', '$location',
-    function ($scope, databaseQueryService, $routeParams, $location) {
-
-        var userScanRuleId = $routeParams.id;
-
-        $scope.userScanRules = [];
-        /**
-         * {
-         *   id: Number,
-         *   username: String,
-         *   scannerUid: String,
-         *   responseCommand: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
-
-        var userScanRulesGet = databaseQueryService.get(
-            'SELECT user_scanner_rules.id AS id, ' +
-            'users.username AS username, ' +
-            'scanners.uid AS scannerUid, ' +
-            'scanner_commands.command AS responseCommand, ' +
-            'user_scanner_rules.week_day AS weekDay, ' +
-            'user_scanner_rules.time_start AS timeStart, ' +
-            'user_scanner_rules.time_end AS timeEnd, ' +
-            'user_scanner_rules.valid_from AS validFrom, ' +
-            'user_scanner_rules.valid_to AS validTo ' +
-            'FROM users, scanners, scanner_commands, user_scanner_rules ' +
-            'WHERE users.id = user_scanner_rules.user AND ' +
-            'scanners.id = user_scanner_rules.scanner AND ' +
-            'scanner_commands.id = user_scanner_rules.response_scanner_command AND ' +
-            'user_scanner_rules.id = ' + userScanRuleId
-        );
-
-        if (userScanRulesGet) {
-            userScanRulesGet.done(function (userScanRules) {
-                $scope.userScanRules = userScanRules;
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
-            });
-        }
-
         $scope.remove = function () {
-            var deleteUserScannerRule = 'CALL deleteUserScannerRule(id)';
-            deleteUserScannerRule = deleteUserScannerRule.replace('id',
-                userScanRuleId);
-            databaseQueryService.procedure({query: deleteUserScannerRule})
-                .done(function (response) {
-                    console.log(JSON.stringify(response));
-                    $location.path('/moderator/userScanRules');
-                    $scope.$apply();
-                }).fail(function (response) {
-                    console.log(JSON.stringify(response));
-                });
+
+            securityService.request(resource, {
+                type: 'DELETE'
+            }).done(function () {
+
+                $location.path('/moderator/userScanRules');
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                console.log(JSON.stringify(response));
+
+            });
+
         };
     }
 ]);
+
+var userScanRuleRequestsResource = '/userScanRuleRequests';
+var userScanRuleRequestsResourceById = userScanRuleRequestsResource + '/:id';
 
 nfcRfidApp.controller('ModeratorAccessRequestsController', ['$scope',
-    'DatabaseQueryService', 'SecurityService',
-    function ($scope, databaseQueryService, securityService) {
+    'SecurityService', '$route',
+    function ($scope, securityService, $route) {
 
-        $scope.scannerCommands = [];
-        $scope.accessRequests = [];
+        requestUserScanRules($scope, userScanRuleRequestsResource,
+            securityService);
 
-        /**
-         * {
-         *   id: Number,
-         *   username: String,
-         *   scannerUid: String,
-         *   responseCommand: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
-        var accessRequestsGet = securityService.request('/accessRequests');
+        var resource = userScanRuleRequestsResourceById + '?method=approve';
 
-        if (accessRequestsGet) {
-            accessRequestsGet.done(function (accessRequests) {
-                $scope.accessRequests = accessRequests;
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
+        $scope.approve = function (userScanRuleId) {
+
+            securityService.request(resource.replace(':id', userScanRuleId), {
+                type: 'PATCH'
+            }).done(function () {
+
+                $route.reload();
+
+            }).fail(function (response) {
+
+                console.log(JSON.stringify(response));
+
             });
-        }
 
-        $scope.disapprove = function (accessRequest) {
-            // TODO
         };
-    }
-]);
 
-nfcRfidApp.controller('ModeratorAccessRequestsEditController', ['$scope',
-    'DatabaseQueryService', 'SecurityService', '$routeParams', '$location',
-    function ($scope, databaseQueryService, securityService, $routeParams,
-              $location) {
+        $scope.disapprove = function (userScanRuleId) {
 
-        var accessRequestId = $routeParams.id;
-        console.log('Access request id: ' + accessRequestId);
+            securityService.request(resource.replace(':id', userScanRuleId), {
+                type: 'DELETE'
+            }).done(function () {
 
-        $scope.userScanRule = {
-            userId: 0,
-            scannerId: 0,
-            responseScannerCommandId: 0,
-            weekDay: 0,
-            timeStart: new Date(),
-            timeEnd: new Date(),
-            validFrom: new Date(),
-            validTo: new Date()
-        };
-        $scope.scannerCommands = [];
+                $route.reload();
 
-        $scope.notification = new Notification();
+            }).fail(function (response) {
 
-        var requestUrl = '/accessRequests/' + accessRequestId;
-        console.log('Request URL: ' + requestUrl);
-        var accessRequestsGet = securityService.request(requestUrl, {
-            type: 'get',
-            dataType: 'json'
-        });
+                console.log(JSON.stringify(response));
 
-        if (accessRequestsGet) {
-            accessRequestsGet.done(function (userScanRules) {
-                $scope.userScanRule = userScanRules[0];
-                console.log(JSON.stringify($scope.userScanRule));
-                securityService.request('/scannerCommands/' + $scope.userScanRule.scannerId, {
-                    type: 'get',
-                    dataType: 'json'
-                }).done(function (scannerCommands) {
-                    $scope.scannerCommands = scannerCommands;
-                    $scope.userScanRule.responseScannerCommandId = scannerCommands[0].id;
-                    $scope.$apply();
-                }).fail(function (error) {
-                    console.log(JSON.stringify(error));
-                });
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
             });
-        }
 
-        $scope.add = function () {
-            securityService.request('/approveAccessRequest', {
-                type: 'post',
-                data: {
-                    accessRequestId: accessRequestId,
-                    responseScannerCommandId: $scope.userScanRule.responseScannerCommandId
-                },
-                dataType: 'json'
-            }).done(function (response) {
-                $location.path('/moderator/accessRequests');
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
-            })
         };
+
     }
 ]);
 
 nfcRfidApp.controller('UserRequestsAddController', ['$scope',
-    'DatabaseQueryService', '$location', 'SecurityService',
-    function ($scope, databaseQueryService, $location, securityService) {
+    'SecurityService', '$location', '$route',
+    function ($scope, securityService, $location, $route) {
 
-        $scope.accessRequest = {
-            scannerId: 0,
-            weekDay: 0,
-            timeStart: new Date(),
-            timeEnd: new Date(),
-            validFrom: new Date(),
-            validTo: new Date()
-        };
+        var redirect = '/user/requests';
 
-        $scope.minDateValidFrom = new Date();
+        userScanRuleCreateController($scope, securityService,
+            userScanRuleRequestsResource, $location, $route, redirect);
 
-        $scope.notification = new Notification();
-
-        $scope.secondsTo0 = function (time) {
-            secondsTo0(time);
-        };
-
-        $scope.scanners = [];
-        /**
-         * {
-         *   id: Number,
-         *   scannerDescription: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
-
-        var scannersGet = databaseQueryService.get(
-            'SELECT id AS id, ' +
-            'description AS description ' +
-            'FROM scanners'
-        );
-
-        if (scannersGet) {
-            scannersGet.done(function (scanners) {
-                $scope.scanners = scanners;
-                $scope.accessRequest.scannerId = scanners[0].id;
-                $scope.$apply();
-            }).fail(function (error) {
-                console.log(JSON.stringify(error));
-            });
-        }
-
-        $scope.add = function () {
-            securityService.request('/accessRequests/create', {
-                type: 'post',
-                data: $scope.accessRequest,
-                dataType: 'json'
-            }).done(function (response) {
-                $location.path('/user/dashboard');
-                $scope.$apply();
-            }).fail(function (response) {
-                console.log(JSON.stringify(response));
-            });
-        };
     }
 ]);
 
 nfcRfidApp.controller('UserRequestsController', ['$scope',
-    'DatabaseQueryService', '$location', 'SecurityService',
-    function ($scope, databaseQueryService, $location, securityService) {
+    'DatabaseQueryService', 'SecurityService',
+    function ($scope, databaseQueryService, securityService) {
 
-        $scope.accessRequests = [];
-        /**
-         * {
-         *   id: Number,
-         *   scannerUid: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
+        requestUserScanRules($scope, userScanRuleRequestsResource,
+            securityService)
 
-        $scope.notification = new Notification();
-
-        var accessRequestsGet = securityService.request(
-            '/accessRequests', {
-                type: 'get',
-                dataType: 'json'
-            });
-
-        if (accessRequestsGet) {
-            accessRequestsGet.done(function (accessRequests) {
-                $scope.accessRequests = accessRequests;
-                $scope.$apply();
-            }).fail(function (response) {
-                console.log(JSON.stringify(response));
-            });
-        }
     }
 ]);
 
 nfcRfidApp.controller('UserAccessRightsController', ['$scope',
-    'DatabaseQueryService', '$location', 'SecurityService',
-    function ($scope, databaseQueryService, $location, securityService) {
+    'SecurityService',
+    function ($scope, securityService) {
 
-        $scope.accessRights = [];
-        /**
-         * {
-         *   id: Number,
-         *   scannerUid: String,
-         *   weekDay: Number (0 - 6, Monday - Sunday),
-         *   timeStart: Time (HH:MM:SS),
-         *   timeEnd: Time (HH:MM:SS),
-         *   validFrom: Date (YYYY-MM-DD),
-         *   validTo: Date (YYYY-MM-DD)
-         * }
-         */
+        var resource = userScanRulesResource + '?expand=user,scanner';
 
-        $scope.notification = new Notification();
+        requestUserScanRules($scope, resource, securityService);
 
-        var accessRights = securityService.request(
-            '/accessRights', {
-                type: 'get',
-                dataType: 'json'
-            });
-
-        if (accessRights) {
-            accessRights.done(function (accessRights) {
-                $scope.accessRights = accessRights;
-                $scope.$apply();
-            }).fail(function (response) {
-                console.log(JSON.stringify(response));
-            });
-        }
     }
 ]);

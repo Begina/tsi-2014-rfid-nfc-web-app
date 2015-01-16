@@ -9,52 +9,51 @@
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.scannerUid">
+                       data-ng-model="searchKeyword.scannerUid">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.weekDay">
+                       data-ng-model="searchKeyword.daysOfWeek">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.validFrom">
+                       data-ng-model="searchKeyword.startDate">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.validTo">
+                       data-ng-model="searchKeyword.endDate">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.timeStart">
+                       data-ng-model="searchKeyword.startTime">
             </th>
             <th>
                 <input type="text"
                        class="form-control"
-                       data-ng-model="search_keyword.timeEnd">
+                       data-ng-model="searchKeyword.endTime">
             </th>
         </tr>
         <tr>
             <th>Scanner UID</th>
-            <th>Week day</th>
-            <th>Valid from</th>
-            <th>Valid to</th>
-            <th>Time start</th>
-            <th>Time end</th>
+            <th>Days of week</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Start time</th>
+            <th>End time</th>
         </tr>
         </thead>
         <tbody>
-        <tr data-ng-repeat="accessRight in accessRights |
-                            filter:search_keyword">
-            <td>{{ accessRight.scannerUid }}</td>
-            <td>{{ accessRight.weekDay }}</td>
-            <td>{{ accessRight.validFrom | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ accessRight.validTo | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ accessRight.timeStart | date: 'HH:mm' }}</td>
-            <td>{{ accessRight.timeEnd | date: 'HH:mm' }}</td>
+        <tr data-ng-repeat="userScanRule in userScanRules | filter:searchKeyword">
+            <td>{{ userScanRule.scannerUid }}</td>
+            <td>{{intsToDaysOfWeek(userScanRule.daysOfWeek)}}</td>
+            <td>{{ userScanRule.startDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.endDate | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ userScanRule.startTime | date: 'HH:mm' }}</td>
+            <td>{{ userScanRule.endTime | date: 'HH:mm' }}</td>
         </tr>
         </tbody>
     </table>

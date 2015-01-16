@@ -126,8 +126,7 @@ app.use(function (req, res, next) {
     dbConnectionPool.query('SELECT id AS id, ' +
         'username AS username, ' +
         'password AS password, ' +
-        'role AS roleId, ' +
-        'logged_in AS loggedIn ' +
+        'role AS role ' +
         'FROM users ' +
         'WHERE username = ? AND password = ?',
         [credentials.name, credentials.pass],
@@ -305,8 +304,8 @@ function sendInputParametersErrorResponse(res, error) {
 }
 
 /*******************************************************************************
- * Login/Logout
- ******************************************************************************/
+* Login
+******************************************************************************/
 
 function getCredentialsError(credentials) {
 
@@ -337,102 +336,19 @@ function getCredentialsError(credentials) {
 }
 
 /**
- * loginLogout:
- * 1 - login
- * 0 - logout
- * onDone(result).
- */
-function authorize(username, password, loginLogout, res, onDone) {
-    dbConnectionPool.query('UPDATE users SET logged_in = ? ' +
-        'WHERE username = ? AND password = ?',
-        [loginLogout, username, password],
-        function (err, result) {
-            if (err) {
-                res.status(500);
-                res.send(err);
-                return;
-            }
-
-            if (onDone) onDone(result);
-        }
-    );
-}
-
-/**
- * POST /accesses
- *
- * Input: Basic Authentication header is needed to get to this resource.
- *
- * Output: Number (role).
- *         403 error if unauthorized to login.
- *         'Error.' (On error.)
- */
+* POST /accesses
+*
+* Input: Basic Authentication header is needed to get to this resource.
+*
+* Output: Number (role).
+*         403 error if unauthorized to login.
+*         'Error.' (On error.)
+*/
 app.post(ROUTE.accesses, function (req, res) {
 
     var user = req.user;
 
-    var onDone = function (result) {
-        res.send('' + user.roleId);
-    };
-
-    authorize(user.username, user.password, 1, res, onDone);
-
-});
-
-/**
- * DELETE /accesses
- *
- * Input: Basic Authentication header is needed to get to this resource.
- *
- * Output: 'Logged out successfully.' (On success.)
- *         'Error.' (On error.)
- */
-app.delete(ROUTE.accesses, function (req, res) {
-
-    var user = req.user;
-
-    var onDone = function (result) {
-        res.send('Logged out successfully.');
-    };
-
-    authorize(user.username, user.password, 0, res);
-
-});
-
-/**
- * GET /accesses
- *
- * Input: Basic Authentication header is needed to get to this resource.
- *
- * Output: Number (role).
- *         403 error if unauthorized to login.
- *         'Error.' (On error.)
- */
-app.get(ROUTE.accesses, function (req, res) {
-
-    // If not logged in, the authentication code will return 401.
-
-    var user = req.user;
-
-    dbConnectionPool.query('SELECT role FROM users ' +
-        'WHERE username = ? AND password = ? AND logged_in = 1',
-        [user.username, user.password],
-        function (err, results) {
-            if (err) {
-                res.status(500);
-                res.send(err);
-                return;
-            }
-
-            if (results.length > 0) {
-                res.send (results[0].role);
-                return;
-            }
-
-            res.status(401);
-            res.send('Unauthorized.');
-        }
-    );
+    res.send('' + user.role);
 
 });
 
@@ -723,6 +639,13 @@ app.post(ROUTE.users, function (req, res) {
         [user.username, user.password, user.role],
         function (err, result) {
             if (err) {
+
+                if (err.code = 'ER_DUP_ENTRY') {
+                    res.status(422);
+                    res.send('User already exists.');
+                    return;
+                }
+
                 res.status(500);
                 res.send(err);
                 return;
@@ -1327,11 +1250,16 @@ function getUserScanRuleError(userScanRule) {
         return 'Scanner id invalid. (Number greater than 0.)';
     }
 
-    if (compareTimes(userScanRule.startTime, userScanRule.endTime) != -1) {
-        return 'Times invalid. (End time must be greater than start time.)';
+    var comparison = compareTimes(userScanRule.startTime,
+        userScanRule.endTime);
+    if (comparison != -1) {
+        return 'Times invalid. (End time must be greater than or equal to ' +
+            'start time.)';
     }
 
-    if (compareDates(userScanRule.startDate, userScanRule.endDate) != -1) {
+    comparison = compareDates(userScanRule.startDate,
+        userScanRule.endDate);
+    if (comparison != -1 && comparison != 0) {
         return 'Dates invalid. (End date must be greater than start date.)';
     }
 
@@ -1454,8 +1382,116 @@ function insertIntoUserScanRules(userScanRule, res, isRequest,
 /**
  * expand must not be falsy. If no expand set expand='';
  */
+function selectUserScanRules2(req, res, userScanRuleId, isRequest) {
+
+    var user = req.user;
+    var userId = user.id;
+    var userRole = user.role;
+    var expand = req.query.expand;
+
+    if (!expand) {
+        expand = '';
+    }
+
+    var selectQueryTemplate = 'SELECT :columns FROM user_scan_rules ' +
+        ':joins WHERE :conditions';
+
+    var columns = 'user_scan_rules.id AS id' +
+        ',user_scan_rules.start_time AS startTime' +
+        ',user_scan_rules.end_time AS endTime' +
+        ',user_scan_rules.start_date AS startDate' +
+        ',user_scan_rules.end_date AS endDate';
+
+    var joins = '';
+
+    var conditions = ' is_request = ?';
+
+    var parameters = [isRequest];
+
+    if (expand.indexOf('user') >= 0) {
+        columns += ',users.username AS username';
+        joins += ' LEFT OUTER JOIN users' +
+        ' ON users.id = user_scan_rules.user';
+    } else {
+        columns += ',user_scan_rules.user AS userId';
+    }
+
+    if (expand.indexOf('scanner') >= 0) {
+        columns += ',scanners.uid AS scannerUid';
+        joins += ' LEFT OUTER JOIN scanners' +
+        ' ON scanners.id = user_scan_rules.scanner';
+    } else {
+        columns += ',user_scan_rules.scanner AS scannerId';
+    }
+
+    if (userRole && userRole === ROLE.user) {
+        conditions += ' AND user_scan_rules.user = ?';
+        parameters.push(userId);
+    }
+
+    if (userScanRuleId) {
+        conditions += ' AND user_scan_rules.id = ?';
+        parameters.push(userScanRuleId);
+    }
+
+    var select = selectQueryTemplate.replace(':columns', columns);
+    select = select.replace(':joins', joins);
+    select = select.replace(':conditions', conditions);
+
+    dbConnectionPool.query(select, parameters, function (err, userScanRules) {
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (userScanRules.length <= 0) {
+                res.send(userScanRules);
+                return;
+            }
+
+            var loaded = 0, userScanRulesCount = userScanRules.length;
+
+            userScanRules.forEach(function (userScanRule) {
+                dbConnectionPool.query('SELECT day_of_week AS day ' +
+                    'FROM user_scan_rule_days ' +
+                    'WHERE user_scan_rule = ?',
+                    [userScanRule.id],
+                    function (err, userScanRuleDays) {
+                        if (err) {
+                            res.status(500);
+                            res.send(err);
+                            return;
+                        }
+
+                        var daysOfWeek = [];
+                        userScanRuleDays.forEach(function (userCanRuleDay) {
+                            daysOfWeek.push(userCanRuleDay.day);
+                        });
+                        userScanRule.daysOfWeek = daysOfWeek;
+
+                        loaded++;
+                        if (loaded === userScanRulesCount) {
+                            if (userScanRuleId) {
+                                res.send(userScanRules[0]);
+                            } else {
+                                res.send(userScanRules);
+                            }
+                        }
+                    }
+                );
+            });
+        }
+    );
+}
+
+
 function selectUserScanRules1(userId, userRole, userScanRuleRequestId,
                              isRequest, res, expand) {
+
+    if (!expand) {
+        expand = '';
+    }
 
     var selectQueryTemplate = 'SELECT :columns FROM user_scan_rules ' +
         ':joins WHERE :conditions';
@@ -1536,7 +1572,7 @@ function selectUserScanRules1(userId, userRole, userScanRuleRequestId,
 
                         loaded++;
                         if (loaded === userScanRulesCount) {
-                            if (userScanRulesCount === 1) {
+                            if (userScanRuleRequestId) {
                                 res.send(userScanRules[0]);
                             } else {
                                 res.send(userScanRules);
@@ -1688,16 +1724,7 @@ app.post(ROUTE.userScanRules, function (req, res) {
  */
 app.get(ROUTE.userScanRules, function (req, res) {
 
-    var expand = req.query.expand;
-
-    console.log('Expand: ');
-    console.log(expand);
-
-    if (!expand) {
-        expand = '';
-    }
-
-    selectUserScanRules1(null, null, null, 0, res, expand);
+    selectUserScanRules2(req, res, null, 0);
 
 });
 
@@ -1730,9 +1757,7 @@ app.get(ROUTE.userScanRules + '/:id', function (req, res) {
         return;
     }
 
-    var expand = req.query.expand;
-
-    selectUserScanRules1(null, null, userScanRuleId, 0, res, expand);
+    selectUserScanRules2(req, res, userScanRuleId, 0);
 
 });
 
@@ -1833,9 +1858,7 @@ app.post(ROUTE.userScanRuleRequests, function (req, res) {
  */
 app.get(ROUTE.userScanRuleRequests, function (req, res) {
 
-    var user = req.user;
-
-    selectUserScanRules(user.id, user.role, null, 1, res);
+    selectUserScanRules2(req, res, null, 1);
 
 });
 
@@ -1871,9 +1894,7 @@ app.get(ROUTE.userScanRuleRequests + '/:id', function (req, res) {
         return;
     }
 
-    var user = req.user;
-
-    selectUserScanRules(user.id, user.role, userScanRuleRequestId, 1, res);
+    selectUserScanRules2(req, res, userScanRuleRequestId, 1);
 
 });
 
@@ -1936,6 +1957,55 @@ app.put(ROUTE.userScanRuleRequests + '/:id', function (req, res) {
 
             if (result.affectedRows > 0) {
                 res.send('User scan rule request updated successfully.');
+                return;
+            }
+
+            res.status(404);
+            res.send('Id invalid.');
+
+        }
+    );
+
+});
+
+/**
+ * Method for approving a user scan rule request.
+ */
+app.patch(ROUTE.userScanRuleRequests + '/:id', function (req, res) {
+
+    var method = req.query.method;
+
+    if (!method || method.indexOf('approve') < 0) {
+        res.status(422);
+        res.send('Invalid method.');
+
+        return;
+    }
+
+    var userScanRuleRequestId = parseInt(req.params.id);
+
+    var error = getIdParameterError(userScanRuleRequestId);
+
+    if (error) {
+        sendInputParametersErrorResponse(error);
+        return;
+    }
+
+
+    dbConnectionPool.query('UPDATE user_scan_rules ' +
+        'SET is_request = 0 ' +
+        'WHERE id = ?',
+        [userScanRuleRequestId],
+        function (err, result) {
+
+            if (err) {
+                res.status(500);
+                res.send(err);
+                return;
+            }
+
+            if (result.affectedRows > 0) {
+                res.send('User scan rule request approved successfully.');
                 return;
             }
 
